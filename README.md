@@ -15,8 +15,9 @@ journey.
 ---
 
 ## Team Members & Roles
+
 | Name | Student ID | Role / Main Focus |
-| :--- | :--- | :--- | :--- |
+| :--- | :--- | :--- |
 | Yassen Hegazy | `40298119` | Frontend Lead / UI Design |
 | Julia Kyrychuk | `40299305` | Backend Lead / Database |
 | Noor Rabie | `40319050` | QA & Testing Specialist |
