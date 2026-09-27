@@ -6,9 +6,25 @@ function Login() {
     const [password, setPassword] = useState('')
 
     return (
-       <form onSubmit={(e) => {
+       <form onSubmit={async(e) => {
       e.preventDefault()
-      alert('Login functionality needs the backend — not built yet!')
+      try{
+        const res = await fetch('http://localhost:5000/api/auth/login',{
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body : JSON.stringify({email, password})
+        })
+        const data = await res.json()
+        if(!res.ok){
+          alert(data.message || 'Login Failed')
+          return
+        }
+        localStorage.setItem('token', data.token)
+        alert(`Welcome back, ${data.user.fullName}!`)
+      }catch(err){
+        console.error(err)
+        alert('could not reach the server')
+      }
     }}>
        <h1>Sign In</h1>
 
@@ -16,7 +32,7 @@ function Login() {
       <input
       id="email"
         type="email"
-        value={email}
+        value={email}           
         onChange={(e) => setEmail(e.target.value)}
         required
       />
