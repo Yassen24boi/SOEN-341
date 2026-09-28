@@ -120,7 +120,21 @@ The team worked on the initial profile and resume management functionality. This
 
 During Sprint 1, the team encountered the following challenges:
 
-- TO-DO
+- **Environment and Tooling Familiarity:** Some team members were initially unfamiliar with the programming languages, frameworks, and development tools required for their assigned tasks. Additional time was required to become familiar with the development environment before implementation could begin.
+
+- **Initial Technology Stack Misunderstanding:** Development initially began using Spring Boot and Java before it was recognized that the agreed technology stack consisted of React, Node.js, and MongoDB. This required some initial work to be restarted using the correct technologies.
+
+- **MongoDB Database Connection:** Several authentication errors occurred while connecting the application to MongoDB Atlas. These were primarily caused by password changes that were not updated accordingly in the `.env` configuration file.
+
+- **Library and Dependency Management:** Some difficulties occurred when setting up unfamiliar libraries and dependencies. For example, additional research was required to understand Mongoose, its role in connecting Node.js with MongoDB, and how to install and configure the appropriate version.
+
+- **Task Distribution:** Dividing the Sprint 1 workload among team members was initially challenging. The team needed to determine how responsibilities such as development, documentation, user stories, meeting minutes, and repository management should be distributed.
+
+- **GitHub Collaboration:** Since multiple team members were contributing to the same repository, the team had to establish a consistent approach for using branches, GitHub Issues, the Project Board, Pull Requests, and task assignments.
+
+- **Project Organization:** Establishing a clear repository structure for documentation, sprint deliverables, AI logs, source code, and meeting minutes required coordination between team members.
+
+- **Team Coordination:** Coordinating work between five team members required clear communication to ensure that responsibilities were understood and that multiple members did not unintentionally work on the same tasks.
 
 The team addressed these issues through communication, task reassignment, research, and collaboration where necessary.
 
