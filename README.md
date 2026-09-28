@@ -105,45 +105,13 @@ By centralizing these features, CareerConnect aims to reduce missed opportunitie
 
 ---
 
-## 🔄 Team Process & Git Workflow
-
-### Branching Strategy
-We adopt a modified **GitFlow / Feature Branching** strategy:
-- `main`: Production-ready code.
-- `develop`: Integration branch for completed features.
-- `feature/<issue-id>-short-description`: Individual feature work (e.g., `feature/#12-user-login`).
-- `bugfix/<issue-id>-short-description`: Patch/bug fix branches.
-
-### Pull Request (PR) & Code Review Process
-1. All work must be linked to a GitHub Issue.
-2. PRs must target the `develop` branch.
-3. At least **one peer code review** and approval is required before merging.
-4. All automated CI checks (linting, tests) must pass.
-
-### Definition of Ready (DoR)
-A user story or task is Ready for implementation when:
-- Story title, criteria, and clear acceptance criteria are defined.
-- Story points / effort estimates are assigned.
-- Dependencies are identified and resolved.
-
-### Definition of Done (DoD)
-A task is Done when:
-- Code is fully implemented and formatted according to team guidelines.
-- Unit/integration tests are written and passing.
-- Code reviewed and approved by at least one team member.
-- Branch merged into `develop` without merge conflicts.
-- Documentation and AI logs updated (if applicable).
-
----
-
 ## 📂 Repository Structure
 
 ```text
 CareerConnect/
 ├── .github/              # Issue templates, PR templates, workflows
-├── client/               # Frontend source code
-├── server/               # Backend source code and APIs
-├── docs/                 # Documentation & meeting minutes
+├── Sprint_Deliverables/  # Frontend source code
+├── Documentation/        # Documentation & meeting minutes
 │   └── meeting_minutes/  # Sprint meeting notes
 ├── AI_Log/               # Individual GenAI usage logs
 │   ├── Member_1/
@@ -151,12 +119,6 @@ CareerConnect/
 │   ├── Member_3/
 │   └── Member_4/
 ├── README.md             # Project README
-└── LICENSE
+└── client
 ```
 
----
-
-## 📝 Sprint 1 Focus & Deliverables
-During Sprint 1, the team focused on project initialization, architecture planning, requirement elicitation, and implementing initial working features:
-1. **Demonstrated Feature 1:** User Registration and Authentication (Login/Signup).
-2. **Demonstrated Feature 2:** Resume Upload and User Profile Management.
