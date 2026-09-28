@@ -104,18 +104,6 @@ Team members may collaborate on tasks when frontend, backend, database, or testi
 
 ---
 
-## Sprint Workflow
-
-Sprint 1 tasks will progress through the following stages:
-
-**To Do → In Progress → Review → Done**
-
-When a team member begins an assigned task, the corresponding GitHub Issue will be moved to **In Progress**. Once implementation is completed, the work will be submitted for review through a Pull Request.
-
-After the required review and testing have been completed, the work will be merged and the corresponding task will be marked as **Done**.
-
----
-
 ## Definition of Sprint 1 Completion
 
 Sprint 1 will be considered successfully completed when:
