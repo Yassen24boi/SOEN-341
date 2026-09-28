@@ -60,33 +60,41 @@ During Sprint 1, the team completed or worked on the following:
 - Performed initial testing of implemented functionality.
 
 ---
-
 ## Team Member Contributions
 
 ### Yassen Hegazy
-- [Task / Issue completed]
-- [Task / Issue completed]
-- [Documentation or development contribution]
+- Set up and initialized the GitHub repository.
+- Added team members and organized the repository structure.
+- Set up and organized the GitHub Project Board.
+- Established the initial GitHub workflow and project structure.
+- Created the Team Process documentation.
+- Created the Sprint 1 Work Plan and Sprint 1 documentation.
+- Managed the overall GitHub implementation and organization of Sprint 1.
 
 ### Julia Kyrychuk
-- [Task / Issue completed]
-- [Task / Issue completed]
-- [Documentation or development contribution]
+- Documented team meetings throughout Sprint 1.
+- Created and maintained meeting minutes.
+- Recorded important team discussions, decisions, task assignments, and project progress.
+- Organized meeting documentation within the repository.
 
 ### Noor Rabie
-- [Task / Issue completed]
-- [Task / Issue completed]
-- [Documentation or development contribution]
+- Created the initial user stories as GitHub Issues.
+- Defined user story descriptions and acceptance criteria.
+- Organized issues using appropriate GitHub labels.
+- Assisted with organizing and tracking Sprint 1 requirements through GitHub Issues.
 
 ### Jose David Torres
-- [Task / Issue completed]
-- [Task / Issue completed]
-- [Documentation or development contribution]
+- Worked on the project README.
+- Documented the project description and identified problem.
+- Documented the proposed solution and key features.
+- Added the technology stack and project setup information.
+- Assisted with maintaining the main project documentation.
 
 ### Michel Yosufov
-- [Task / Issue completed]
-- [Task / Issue completed]
-- [Documentation or development contribution]
+- Worked on the initial implementation of CareerConnect.
+- Developed the code for the Sprint 1 features.
+- Contributed to the implementation of the application's initial functionality.
+- Assisted with integrating the initial project components.
 
 ---
 
@@ -96,7 +104,7 @@ During Sprint 1, the team completed or worked on the following:
 
 The team worked on the initial authentication functionality required for CareerConnect. This feature is intended to allow users to register for an account, log in using their credentials, and securely access functionality associated with their account.
 
-**Status:** [Completed / In Progress]
+**Status:** [Completed]
 
 ---
 
@@ -104,7 +112,7 @@ The team worked on the initial authentication functionality required for CareerC
 
 The team worked on the initial profile and resume management functionality. This feature is intended to allow authenticated users to maintain their profile information and upload or update a resume associated with their account.
 
-**Status:** [Completed / In Progress]
+**Status:** [Completed]
 
 ---
 
@@ -112,10 +120,7 @@ The team worked on the initial profile and resume management functionality. This
 
 During Sprint 1, the team encountered the following challenges:
 
-- [Challenge encountered during development]
-- [GitHub/workflow issue]
-- [Technical issue]
-- [Scheduling or collaboration issue]
+- TO-DO
 
 The team addressed these issues through communication, task reassignment, research, and collaboration where necessary.
 
@@ -123,13 +128,7 @@ The team addressed these issues through communication, task reassignment, resear
 
 ## Incomplete Work
 
-The following Sprint 1 tasks were not fully completed and may be continued during the next sprint:
-
-- [Incomplete task]
-- [Incomplete feature]
-- [Remaining testing/documentation]
-
-Any unfinished GitHub Issues will be reviewed by the team and moved into a future sprint when appropriate.
+*None*
 
 ---
 
