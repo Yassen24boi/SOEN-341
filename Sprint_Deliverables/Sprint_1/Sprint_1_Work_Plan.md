@@ -38,19 +38,19 @@ During Sprint 1, the team aims to:
 
 ## Sprint Backlog
 
-| Task | Description | Priority | Status |
-|---|---|---|---|
-| Repository Setup | Configure repository structure and team access | High | In Progress |
-| Project Board | Configure GitHub Project Board and task tracking | High | In Progress |
-| README | Complete project description, solution, features, technologies, and setup instructions | High | In Progress |
-| Team Process | Define development, branching, review, and communication processes | High | In Progress |
-| User Stories | Create initial user stories as GitHub Issues with acceptance criteria | High | To Do |
-| Development Environment | Set up React, Node.js, MongoDB, and required dependencies | High | To Do |
-| Authentication | Implement user registration and login | High | To Do |
-| User Profile | Create basic user profile functionality | High | To Do |
-| Resume Upload | Allow users to upload and manage a resume | High | To Do |
-| Testing | Test the functionality developed during Sprint 1 | Medium | To Do |
-| Documentation | Maintain meeting minutes, sprint documentation, and AI logs | Medium | In Progress |
+| Task | Description | Priority | 
+|---|---|---|
+| Repository Setup | Configure repository structure and team access | High | 
+| Project Board | Configure GitHub Project Board and task tracking | High |
+| README | Complete project description, solution, features, technologies, and setup instructions | High | 
+| Team Process | Define development, branching, review, and communication processes | High | 
+| User Stories | Create initial user stories as GitHub Issues with acceptance criteria | High | 
+| Development Environment | Set up React, Node.js, MongoDB, and required dependencies | High | 
+| Authentication | Implement user registration and login | High | 
+| User Profile | Create basic user profile functionality | High | 
+| Resume Upload | Allow users to upload and manage a resume | High | 
+| Testing | Test the functionality developed during Sprint 1 | Medium |
+| Documentation | Maintain meeting minutes, sprint documentation, and AI logs | Medium |
 
 ---
 
