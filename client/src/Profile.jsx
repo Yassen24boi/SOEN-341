@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import {useNavigate} from 'react-router-dom'
 
 function Profile(){
 const [fullName, setFullName] = useState('')
@@ -87,6 +88,11 @@ async function handleResumeUpload() {
     alert('Could not reach the server')
   }
 }
+const navigate = useNavigate()
+function handleLogout() {
+  localStorage.removeItem('token')
+  navigate('/login')
+}
 
 if (!token) {
   return <p>You must be logged in to view this page.</p>
@@ -100,6 +106,8 @@ return (
   <form onSubmit={handleSaveProfile}>
 
 <h1> Create Account / My Profile </h1>
+
+<button type = "button" onClick={handleLogout}>Log out</button>
 
 <label htmlFor="fulleName"> Full Name: </label>
       <input
