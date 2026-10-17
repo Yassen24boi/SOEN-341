@@ -1,14 +1,4 @@
 # Sprint 2 Work Plan — CareerConnect
-
-**Course:** SOEN 341 — Software Process  
-**Project:** CareerConnect  
-**Sprint:** 2  
-**Sprint Period:** October 17–26, 2026  
-**Submission Deadline:** October 26, 2026  
-**Scrum Master:** Yassen Hegazy  
-
----
-
 ## 1. Sprint Overview
 
 Sprint 2 focuses on expanding CareerConnect's core functionality,
