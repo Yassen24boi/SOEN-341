@@ -82,13 +82,15 @@ function Profile() {
 
       <div className="form-row">
         <label><strong>Headline:</strong></label>
+        <div className="view-box-style">
         <p>{profile?.headline || 'Not provided'}</p>
+        </div>
       </div>
 
-      <div className="form-row" style={{height:'40px'}}>
+      <div className="form-row">
         <label><strong>Resume:</strong></label>
         {profile?.resumeFileName ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height:'40px' }}>
             <button type="button" style={{height:'100%'}} onClick={handleDownloadResume}>Download</button>
           </div>
         ) : (

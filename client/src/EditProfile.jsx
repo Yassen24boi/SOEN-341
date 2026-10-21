@@ -147,10 +147,10 @@ return (
   />
 </div>
 
-<div className="form-row">
+<div className="form-row" style={{height:'300%'}}>
   <label htmlFor="headline"> Headline: </label>
 
-    <input
+    <textarea
         id="headline"
         type="text"
         value={headline}
