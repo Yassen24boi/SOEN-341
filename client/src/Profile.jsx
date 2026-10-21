@@ -99,35 +99,42 @@ if (loading) {
 return (
   <form onSubmit={handleSaveProfile}>
 
-<h1> Create Account / My Profile </h1>
+<h1> My Profile </h1>
 
-<label htmlFor="fulleName"> Full Name: </label>
-      <input
+<div className="form-row">
+  <label htmlFor="fullName"> Full Name: </label>
+  <input
         id="fullName"
         type="text"
         value={fullName}
         onChange={(e) => setFullName(e.target.value)}
         required
-      />
+    />
+</div>
 
-<label htmlFor="email"> Email: </label>
-      <input
+<div className="form-row">
+  <label htmlFor="email"> Email: </label>
+  <input
         id="email"
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-      />
+  />
+</div>
 
- <label htmlFor="headline"> Headline: </label>
-      <input
+<div className="form-row">
+  <label htmlFor="headline"> Headline: </label>
+    <input
         id="headline"
         type="text"
         value={headline}
         onChange={(e) => setHeadline(e.target.value)}
         required
-      />   
+    />
+</div>
 
+<div className="form-row">
 <label htmlFor="resume"> Resume: </label>
       <input
         id="resumeFile"
@@ -135,10 +142,10 @@ return (
         accept=".pdf,.doc,.docx"
         onChange={(e) => setResumeFile(e.target.files[0])}
       />
-
+</div>
      {resumeFileName && <p>Current resume: {resumeFileName}</p>}
 {resumeFile && <p>Selected file: {resumeFile.name}</p>}
-<br />
+
 <button type="submit">Save Profile</button>
 <button type="button" onClick={handleResumeUpload}>Upload Resume</button>
 

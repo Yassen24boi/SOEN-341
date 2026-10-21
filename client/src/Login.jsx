@@ -27,7 +27,7 @@ function Login() {
       }
     }}>
        <h1>Sign In</h1>
-
+      <div className="form-row">
       <label htmlFor="email"> Email: </label>
       <input
       id="email"
@@ -35,9 +35,9 @@ function Login() {
         value={email}           
         onChange={(e) => setEmail(e.target.value)}
         required
-      />
+      /></div>
 
-
+      <div className="form-row">
         <label htmlFor="password"> Password: </label>
 
         <input
@@ -47,11 +47,12 @@ function Login() {
         onChange={(e)=> setPassword(e.target.value)}
         required
         />
+        </div>
 
-    <br />
+
       <button type="submit">Sign In</button>
 
-      <br />
+  
       <Link to="/create-account">Create Account</Link>
     </form>
     )
