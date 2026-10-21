@@ -3,6 +3,7 @@ import Login from './Login'
 import Profile from './Profile'
 import CreateAccount from './CreateAccount'
 import './App.css'
+import RecruiterDashboard from './RecruiterDashboard'
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/recruiter" element={<RecruiterDashboard />} />
         <Route path="/" element={<Login />} />
       </Routes>
     </BrowserRouter>
