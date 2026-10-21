@@ -42,7 +42,7 @@ useEffect(() => {
 async function handleSaveProfile(e) {
   e.preventDefault()
   try {
-    const res = await fetch('http://localhost:5000/api/profile', {
+    const profileRes = await fetch('http://localhost:5000/api/profile', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -50,38 +50,31 @@ async function handleSaveProfile(e) {
       },
       body: JSON.stringify({ fullName, email, headline })
     })
-    const data = await res.json()
-    if (!res.ok) {
-      alert(data.message || 'Could not save profile')
+    const profileData = await profileRes.json()
+    if (!profileRes.ok) {
+      alert(profileData.message || 'Could not save profile')
       return
     }
-    alert('Profile saved!')
-  } catch (err) {
-    console.error(err)
-    alert('Could not reach the server')
-  }
-}
 
-async function handleResumeUpload() {
-  if (!resumeFile) {
-    alert('Choose a file first')
-    return
-  }
-  const formData = new FormData()
-  formData.append('resumeFile', resumeFile)
-  try {
-    const res = await fetch('http://localhost:5000/api/profile/resume', {
+    if(resumeFile){
+      const formData = new FormData()
+      formData.append('resumeFile', resumeFile)
+
+      const resumeRes = await fetch('http://localhost:5000/api/profile/resume', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      alert(data.message || 'Upload failed')
-      return
+      })
+      const resumeData = await resumeRes.json()
+      if (!resumeRes.ok) {
+        alert(resumeData.message || 'Profile saved, but resume upload failed')
+        return
+      }
+      setResumeFileName(resumeData.resumeFileName)
+      setResumeFile(null)
     }
-    setResumeFileName(data.resumeFileName)
-    alert('Resume uploaded!')
+
+    alert('Profile saved!')
   } catch (err) {
     console.error(err)
     alert('Could not reach the server')
@@ -147,7 +140,6 @@ return (
 {resumeFile && <p>Selected file: {resumeFile.name}</p>}
 
 <button type="submit">Save Profile</button>
-<button type="button" onClick={handleResumeUpload}>Upload Resume</button>
 
 </form>
 )
