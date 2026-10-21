@@ -81,6 +81,31 @@ async function handleSaveProfile(e) {
   }
 }
 
+  async function handleDownloadResume() {
+    try {
+      const res = await fetch('http://localhost:5000/api/profile/resume', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!res.ok) {
+        alert('Could not download resume')
+        return
+      }
+      
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'resume.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error(err)
+      alert('Could not reach the server')
+    }
+  }
+
 if (!token) {
   return <p>You must be logged in to view this page.</p>
 }
@@ -136,7 +161,12 @@ return (
         onChange={(e) => setResumeFile(e.target.files[0])}
       />
 </div>
-     {resumeFileName && <p>Current resume: {resumeFileName}</p>}
+     {resumeFileName && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <p>Current resume uploaded:</p>
+          <button type="button" onClick={handleDownloadResume}>Download Resume</button>
+        </div>
+      )}
 {resumeFile && <p>Selected file: {resumeFile.name}</p>}
 
 <button type="submit">Save Profile</button>
