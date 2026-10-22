@@ -21,9 +21,10 @@ function Login() {
           return
         }
         localStorage.setItem('token', data.token)
-        
+
+        // Task 4.4: Redirect based on profile status and role
         if (data.user.role === 'jobseeker' && !data.user.hasProfile) {
-          alert(`Welcome, ${data.user.fullName}! Please complete your profile.`)
+          alert(`Welcome, ${data.user.fullName}! Please set up your professional profile.`)
           navigate('/profile/edit')
         } else if (data.user.role === 'recruiter') {
           navigate('/recruiter')
@@ -40,7 +41,7 @@ function Login() {
       <div className="form-row">
       <label htmlFor="email"> Email: </label>
       <input
-      id="email"
+        id="email"
         type="email"
         value={email}           
         onChange={(e) => setEmail(e.target.value)}
@@ -50,11 +51,11 @@ function Login() {
       <div className="form-row">
         <label htmlFor="password"> Password: </label>
         <input
-        id ="password"
-        type ="password"
-        value ={password}
-        onChange={(e)=> setPassword(e.target.value)}
-        required
+          id ="password"
+          type ="password"
+          value ={password}
+          onChange={(e)=> setPassword(e.target.value)}
+          required
         />
         </div>
 
