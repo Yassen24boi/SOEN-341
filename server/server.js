@@ -21,7 +21,7 @@ app.get('/api/health', (req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
-app.use('/api/profile', profileRoutes)
+app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/jobs', jobRoutes)
 
 // Only listen on port if NOT in test environment

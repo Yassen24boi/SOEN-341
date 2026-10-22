@@ -39,7 +39,6 @@ router.get('/', requireAuth, async (req, res) => {
 
     const profile = await Profile.findOne({ user_id: req.userId })
 
-    // Combine user account data and professional profile data into one object for the frontend
     const combinedData = {
       ...user.toObject(),
       ...(profile ? profile.toObject() : {})
@@ -71,14 +70,12 @@ router.put('/', requireAuth, async (req, res) => {
   }
 
   try {
-    // 1. Update basic User info
     await User.findByIdAndUpdate(
       req.userId,
       { fullName, email, headline, location },
       { new: true, runValidators: true }
     )
 
-    // 2. Upsert extended Profile info (skills, links, experience, education, etc.)
     const profileFields = {
       user_id: req.userId,
       headline,
@@ -141,6 +138,29 @@ router.get('/resume', requireAuth, async (req, res) => {
     }
     res.download(path.join(__dirname, '..', 'uploads', user.resumeFileName))
   } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
+// GET /api/profile/:userId - get a specific user's extended profile
+// MUST BE AT THE BOTTOM SO IT DOES NOT CATCH /resume
+router.get('/:userId', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).select('-password')
+    if (!user) return res.status(404).json({ message: 'User not found' })
+
+    const profile = await Profile.findOne({ user_id: req.params.userId })
+
+    const combinedData = {
+      ...user.toObject(),
+      ...(profile ? profile.toObject() : {})
+    }
+
+    res.json(combinedData)
+  } catch (err) {
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'User not found' })
+    }
     res.status(500).json({ message: err.message })
   }
 })
