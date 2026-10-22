@@ -1,6 +1,7 @@
 const express = require('express')
 const jwt = require('jsonwebtoken')
 const User = require('../models/User')
+const Profile = require('../models/Profile')
 
 const router = express.Router()
 
@@ -28,7 +29,8 @@ router.post('/register', async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
-        role: user.role
+        role: user.role,
+        hasProfile: false
       }
     })
   } catch (err) {
@@ -51,6 +53,9 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' })
     }
 
+    const profile = await Profile.findOne({ user_id: user._id })
+    const hasProfile = !!profile
+
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -63,7 +68,8 @@ router.post('/login', async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
-        role: user.role
+        role: user.role,
+        hasProfile
       }
     })
   } catch (err) {

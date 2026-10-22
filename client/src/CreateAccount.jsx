@@ -26,7 +26,15 @@ function CreateAccount() {
 
         localStorage.setItem('token', data.token)
         alert(`Account created! Welcome, ${data.user.fullName}`)
-        navigate('/profile')
+
+        // Redirect new job seekers straight to profile setup, and recruiters to their dashboard
+        if (data.user.role === 'jobseeker') {
+          navigate('/profile/edit')
+        } else if (data.user.role === 'recruiter') {
+          navigate('/recruiter')
+        } else {
+          navigate('/profile')
+        }
       } catch (err) {
         console.error(err)
         alert('Could not reach the server')
