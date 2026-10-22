@@ -58,8 +58,8 @@ GitHub repository.
 | #8 | US-03: Upload CV | User Story | Julia Kyrychuk | Oct 20 | High | Not Started |
 | #17 | US-04: Create a Professional Profile | User Story | Julia Kyrychuk | Oct 20 | High | Not Started |
 | #18 | US-05: Edit My Profile | User Story | Yassen Hegazy / Julia Kyrychuk | Oct 21 | High | Not Started |
-| #19 | US-06: View My Full Profile Page | User Story | Julia Kyrychuk | Oct 21 | Medium | Not Started |
-| #20 | US-07: Keep Several CVs and Choose a Default | User Story | Julia Kyrychuk | Oct 21 | Medium | Not Started |
+| #19 | US-06: View My Full Profile Page | User Story |Yassen Hegazy | Oct 21 | Medium | Not Started |
+| #20 | US-07: Keep Several CVs and Choose a Default | User Story | Yassen Hegazy| Oct 21 | Medium | Not Started |
 
 **Expected Deliverable:**
 
