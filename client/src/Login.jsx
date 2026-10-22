@@ -21,8 +21,16 @@ function Login() {
           return
         }
         localStorage.setItem('token', data.token)
-        alert(`Welcome back, ${data.user.fullName}!`)
-        navigate('/profile')
+        
+        if (data.user.role === 'jobseeker' && !data.user.hasProfile) {
+          alert(`Welcome, ${data.user.fullName}! Please complete your profile.`)
+          navigate('/profile/edit')
+        } else if (data.user.role === 'recruiter') {
+          navigate('/recruiter')
+        } else {
+          alert(`Welcome back, ${data.user.fullName}!`)
+          navigate('/profile')
+        }
       }catch(err){
         console.error(err)
         alert('could not reach the server')
@@ -41,7 +49,6 @@ function Login() {
 
       <div className="form-row">
         <label htmlFor="password"> Password: </label>
-
         <input
         id ="password"
         type ="password"
@@ -51,10 +58,7 @@ function Login() {
         />
         </div>
 
-
       <button type="submit">Sign In</button>
-
-      
       <Link to="/create-account">Create Account</Link>
     </form>
     )

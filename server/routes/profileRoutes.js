@@ -2,6 +2,7 @@ const express = require('express')
 const multer = require('multer')
 const path = require('path')
 const User = require('../models/User')
+const Profile = require('../models/Profile')
 const requireAuth = require('../middleware/auth')
 
 const router = express.Router()
@@ -30,27 +31,85 @@ const upload = multer({
   }
 })
 
-// GET /api/profile - get the logged-in user's own profile
+// GET /api/profile - get the logged-in user's user details AND extended profile
 router.get('/', requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password')
     if (!user) return res.status(404).json({ message: 'User not found' })
-    res.json(user)
+
+    const profile = await Profile.findOne({ user_id: req.userId })
+
+    // Combine user account data and professional profile data into one object for the frontend
+    const combinedData = {
+      ...user.toObject(),
+      ...(profile ? profile.toObject() : {})
+    }
+
+    res.json(combinedData)
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
 })
 
-// PUT /api/profile - update fullName, email, headline
+// PUT /api/profile - update user info and full professional profile
+const phoneRegex = /^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$/;
+const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+
 router.put('/', requireAuth, async (req, res) => {
+  const { fullName, email, headline, location, phone, summary, skills, links, experience, education } = req.body
+  const errors = {}
+
+  if (phone && !phoneRegex.test(phone)) errors.phone = 'Invalid phone number format'
+  if (links) {
+    if (links.portfolio && !urlRegex.test(links.portfolio)) errors.portfolio = 'Invalid URL format'
+    if (links.linkedin && !urlRegex.test(links.linkedin)) errors.linkedin = 'Invalid URL format'
+    if (links.github && !urlRegex.test(links.github)) errors.github = 'Invalid URL format'
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return res.status(400).json({ errors })
+  }
+
   try {
-    const { fullName, email, headline } = req.body
-    const user = await User.findByIdAndUpdate(
+    // 1. Update basic User info
+    await User.findByIdAndUpdate(
       req.userId,
-      { fullName, email, headline },
+      { fullName, email, headline, location },
       { new: true, runValidators: true }
-    ).select('-password')
-    res.json(user)
+    )
+
+    // 2. Upsert extended Profile info (skills, links, experience, education, etc.)
+    const profileFields = {
+      user_id: req.userId,
+      headline,
+      location,
+      phone,
+      summary,
+      skills: Array.isArray(skills) ? skills : (skills ? skills.split(',').map(s => s.trim()) : []),
+      links: links || {},
+      experience: experience || [],
+      education: education || []
+    }
+
+    let profile = await Profile.findOne({ user_id: req.userId })
+    if (profile) {
+      profile = await Profile.findOneAndUpdate(
+        { user_id: req.userId },
+        { $set: profileFields },
+        { new: true }
+      )
+    } else {
+      profile = new Profile(profileFields)
+      await profile.save()
+    }
+
+    const updatedUser = await User.findById(req.userId).select('-password')
+    const combinedResponse = {
+      ...updatedUser.toObject(),
+      ...profile.toObject()
+    }
+
+    res.json(combinedResponse)
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
