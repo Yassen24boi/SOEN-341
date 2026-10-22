@@ -34,6 +34,7 @@ function CreateAccount() {
     }}>
       <h1>Create Account</h1>
 
+      <div className="form-row">
       <label htmlFor="fullName">Full Name:</label>
       <input
         id="fullName"
@@ -41,8 +42,9 @@ function CreateAccount() {
         value={fullName}
         onChange={(e) => setFullName(e.target.value)}
         required
-      />
+      /></div>
 
+      <div className="form-row">
       <label htmlFor="email">Email:</label>
       <input
         id="email"
@@ -50,8 +52,9 @@ function CreateAccount() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-      />
+      /></div>
 
+      <div className="form-row">
       <label htmlFor="password">Password:</label>
       <input
         id="password"
@@ -59,13 +62,14 @@ function CreateAccount() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
-      />
+      /></div>
 
+      <div className="form-row">
       <label htmlFor="role">I am a:</label>
       <select id="role" value={role} onChange={(e) => setRole(e.target.value)}>
         <option value="jobseeker">Job Seeker</option>
         <option value="recruiter">Recruiter</option>
-      </select>
+      </select></div>
 
       <br />
       <button type="submit">Create Account</button>
