@@ -4,8 +4,6 @@ const mongoose = require('mongoose');
 const Profile = require('../models/Profile');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const path = require('path');
-const fs = require('fs');
 
 describe('CareerConnect Profile Feature Tests', () => {
     let token;
@@ -74,8 +72,8 @@ describe('CareerConnect Profile Feature Tests', () => {
             const payload = {
                 fullName: 'Test User Updated',
                 email: testUser.email,
-                headline: '', // optional
-                location: '', // optional
+                headline: '', 
+                location: '', 
                 summary: 'Motivated software developer.',
                 skills: ['Node.js', 'MongoDB']
             };
@@ -110,7 +108,7 @@ describe('CareerConnect Profile Feature Tests', () => {
                         company: 'Web Studio',
                         location: 'Remote',
                         from: '2022-01-01',
-                        current: true, // Still work here test
+                        current: true,
                         description: 'Building UI components.'
                     }
                 ],
@@ -136,6 +134,22 @@ describe('CareerConnect Profile Feature Tests', () => {
             expect(res.body.experience[0].current).toEqual(true);
             expect(res.body.education.length).toEqual(1);
             expect(res.body.links.portfolio).toEqual('https://myportfolio.com');
+        });
+    });
+    
+    describe('AT-05.3: Profile Ownership Validation', () => {
+        it('should return a 403 or 404 error when attempting to update someone else\'s profile', async () => {
+            // Attempting to modify a profile belonging to a different user ID
+            const otherUserId = new mongoose.Types.ObjectId();
+            
+            const res = await request(app)
+                // Sending request to a specific ID endpoint
+                .put(`/api/profile/${otherUserId}`) 
+                .set('Authorization', `Bearer ${token}`)
+                .send({ headline: 'Hacked Headline' });
+
+            // Expecting 401 Unauthorized, 403 Forbidden, or 404 Not Found
+            expect([401, 403, 404]).toContain(res.statusCode); 
         });
     });
 
