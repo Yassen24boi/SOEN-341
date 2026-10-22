@@ -77,15 +77,27 @@ function EditProfile(){
     setExperience([...experience, { title: '', company: '', location: '', from: '', to: '', current: false, description: '' }])
   }
 
+  const removeExperience = (index) => {
+    const newExp = [...experience];
+    newExp.splice(index, 1);
+    setExperience(newExp);
+  }
+
   const addEducation = () => {
     setEducation([...education, { school: '', degree: '', fieldOfStudy: '', from: '', to: '', current: false }])
+  }
+
+  const removeEducation = (index) => {
+    const newEdu = [...education];
+    newEdu.splice(index, 1);
+    setEducation(newEdu);
   }
 
   async function handleSaveProfile(e) {
     e.preventDefault()
     setErrors({})
 
-    // Validate experience timeline constraints (End date cannot be before start date)
+    // Validate experience timeline constraints
     for (let i = 0; i < experience.length; i++) {
       const exp = experience[i]
       if (exp.from && exp.to && !exp.current) {
@@ -176,7 +188,7 @@ function EditProfile(){
 
   return (
     <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '600px', margin: '0 auto', paddingBottom: '40px' }}>
-      <h1> My Profile </h1>
+      <h1> Edit Profile </h1>
 
       <div className="form-row">
         <label htmlFor="fullName">Full Name:</label>
@@ -228,7 +240,7 @@ function EditProfile(){
         </div>
       </div>
 
-      {/* Experience Section with Timeline & 'Present' Checkbox */}
+      {/* Experience Section */}
       <div style={{ borderTop: '1px solid #ccc', paddingTop: '15px', textAlign: 'left' }}>
         <h3>Experience</h3>
         {experience.map((exp, index) => (
@@ -274,9 +286,10 @@ function EditProfile(){
                     setExperience(newExp);
                   }} 
                 />
-                <label htmlFor={`current-${index}`} style={{ fontSize: '13px', marginLeft: '4px' }}>I still work here</label>
+                <label htmlFor={`current-${index}`} style={{ fontSize: '13px', marginLeft: '4px', marginRight: 'auto' }}>I still work here</label>
               </div>
             </div>
+            <button type="button" onClick={() => removeExperience(index)} style={{ color: 'red', alignSelf: 'flex-start', marginTop: '8px' }}>Remove</button>
           </div>
         ))}
         <button type="button" onClick={addExperience}>+ Add Experience</button>
@@ -296,6 +309,7 @@ function EditProfile(){
             <input type="text" placeholder="Field of Study" value={edu.fieldOfStudy} onChange={(e) => {
               const newEdu = [...education]; newEdu[index].fieldOfStudy = e.target.value; setEducation(newEdu);
             }} style={{ flex: '1 1 30%' }} />
+            <button type="button" onClick={() => removeEducation(index)} style={{ color: 'red', flex: '1 1 100%', textAlign: 'left' }}>Remove</button>
           </div>
         ))}
         <button type="button" onClick={addEducation}>+ Add Education</button>
@@ -314,7 +328,7 @@ function EditProfile(){
               <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setResumeFile(e.target.files[0])} />
               {resumeFileName && (
                 <button style={{width: "50%"}} type="button" onClick={() => { setIsEditingResume(false); setResumeFile(null); }}>
-                  Cancel
+                  Cancel Replace
                 </button>
               )}
             </div>
@@ -322,7 +336,10 @@ function EditProfile(){
         </div>
       </div>
 
-      <button type="submit">Save Profile</button>
+      <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+        <button type="submit" style={{ flex: 1 }}>Save Profile</button>
+        <button type="button" onClick={() => navigate('/profile')} style={{ flex: 1, backgroundColor: '#ccc', color: '#333' }}>Cancel</button>
+      </div>
     </form>
   )
 }
