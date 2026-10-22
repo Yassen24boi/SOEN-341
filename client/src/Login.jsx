@@ -1,9 +1,10 @@
 import { useState } from "react"
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 function Login() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const navigate = useNavigate()
 
     return (
        <form onSubmit={async(e) => {
@@ -21,13 +22,14 @@ function Login() {
         }
         localStorage.setItem('token', data.token)
         alert(`Welcome back, ${data.user.fullName}!`)
+        navigate('/profile')
       }catch(err){
         console.error(err)
         alert('could not reach the server')
       }
     }}>
        <h1>Sign In</h1>
-
+      <div className="form-row">
       <label htmlFor="email"> Email: </label>
       <input
       id="email"
@@ -35,9 +37,9 @@ function Login() {
         value={email}           
         onChange={(e) => setEmail(e.target.value)}
         required
-      />
+      /></div>
 
-
+      <div className="form-row">
         <label htmlFor="password"> Password: </label>
 
         <input
@@ -47,11 +49,12 @@ function Login() {
         onChange={(e)=> setPassword(e.target.value)}
         required
         />
+        </div>
 
-    <br />
+
       <button type="submit">Sign In</button>
 
-      <br />
+      
       <Link to="/create-account">Create Account</Link>
     </form>
     )

@@ -1,158 +1,108 @@
 import { useState, useEffect } from "react"
-import {useNavigate} from 'react-router-dom'
+import { useNavigate } from "react-router-dom"
 
-function Profile(){
-const [fullName, setFullName] = useState('')
-const [email, setEmail] = useState('')
-const [headline, setHeadline] = useState('')
-const [resumeFile, setResumeFile] = useState(null)
-const [resumeFileName, setResumeFileName] = useState(null)
-const [loading, setLoading] = useState(true)
+function Profile() {
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const token = localStorage.getItem('token')
+  const navigate = useNavigate()
 
-const token = localStorage.getItem('token')
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const res = await fetch('http://localhost:5000/api/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          alert(data.message || 'Could not load profile')
+          return
+        }
+        setProfile(data)
+      } catch (err) {
+        console.error(err)
+        alert('Could not reach the server')
+      } finally {
+        setLoading(false)
+      }
+    }
 
-useEffect(() => {
-  async function loadProfile() {
+    if (token) {
+      loadProfile()
+    } else {
+      setLoading(false)
+    }
+  }, [token])
+
+  async function handleDownloadResume() {
     try {
-      const res = await fetch('http://localhost:5000/api/profile', {
+      const res = await fetch('http://localhost:5000/api/profile/resume', {
         headers: { Authorization: `Bearer ${token}` }
       })
-      const data = await res.json()
       if (!res.ok) {
-        alert(data.message || 'Could not load profile')
+        alert('Could not download resume')
         return
       }
-      setFullName(data.fullName || '')
-      setEmail(data.email || '')
-      setHeadline(data.headline || '')
-      setResumeFileName(data.resumeFileName || null)
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'resume.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
     } catch (err) {
       console.error(err)
       alert('Could not reach the server')
-    } finally {
-      setLoading(false)
     }
   }
-  if (token) {
-    loadProfile()
-  } else {
-    setLoading(false)
+
+  if (!token) {
+    return <p>You must be logged in to view this page.</p>
   }
-}, [token])
 
-async function handleSaveProfile(e) {
-  e.preventDefault()
-  try {
-    const res = await fetch('http://localhost:5000/api/profile', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ fullName, email, headline })
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      alert(data.message || 'Could not save profile')
-      return
-    }
-    alert('Profile saved!')
-  } catch (err) {
-    console.error(err)
-    alert('Could not reach the server')
+  if (loading) {
+    return <p>Loading profile...</p>
   }
-}
 
-async function handleResumeUpload() {
-  if (!resumeFile) {
-    alert('Choose a file first')
-    return
-  }
-  const formData = new FormData()
-  formData.append('resumeFile', resumeFile)
-  try {
-    const res = await fetch('http://localhost:5000/api/profile/resume', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      alert(data.message || 'Upload failed')
-      return
-    }
-    setResumeFileName(data.resumeFileName)
-    alert('Resume uploaded!')
-  } catch (err) {
-    console.error(err)
-    alert('Could not reach the server')
-  }
-}
-const navigate = useNavigate()
-function handleLogout() {
-  localStorage.removeItem('token')
-  navigate('/login')
-}
+  return (
+    <div className="display-profile" style={{ maxWidth: '500px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <h1>My Profile</h1>
 
-if (!token) {
-  return <p>You must be logged in to view this page.</p>
-}
+      <div className="form-row">
+        <label><strong>Full Name:</strong></label>
+        <p>{profile?.fullName || 'Not provided'}</p>
+      </div>
 
-if (loading) {
-  return <p>Loading profile...</p>
-}
+      <div className="form-row">
+        <label><strong>Email:</strong></label>
+        <p>{profile?.email || 'Not provided'}</p>
+      </div>
 
-return (
-  <form onSubmit={handleSaveProfile}>
+      <div className="form-row">
+        <label><strong>Headline:</strong></label>
+        <div className="view-box-style">
+        <p>{profile?.headline || 'Not provided'}</p>
+        </div>
+      </div>
 
-<h1> Create Account / My Profile </h1>
+      <div className="form-row">
+        <label><strong>Resume:</strong></label>
+        {profile?.resumeFileName ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height:'40px' }}>
+            <button type="button" style={{height:'100%'}} onClick={handleDownloadResume}>Download</button>
+          </div>
+        ) : (
+          <p>No resume uploaded</p>
+        )}
+      </div>
 
-<button type = "button" onClick={handleLogout}>Log out</button>
-
-<label htmlFor="fulleName"> Full Name: </label>
-      <input
-        id="fullName"
-        type="text"
-        value={fullName}
-        onChange={(e) => setFullName(e.target.value)}
-        required
-      />
-
-<label htmlFor="email"> Email: </label>
-      <input
-        id="email"
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
-
- <label htmlFor="headline"> Headline: </label>
-      <input
-        id="headline"
-        type="text"
-        value={headline}
-        onChange={(e) => setHeadline(e.target.value)}
-        required
-      />   
-
-<label htmlFor="resume"> Resume: </label>
-      <input
-        id="resumeFile"
-        type="file"
-        accept=".pdf,.doc,.docx"
-        onChange={(e) => setResumeFile(e.target.files[0])}
-      />
-
-     {resumeFileName && <p>Current resume: {resumeFileName}</p>}
-{resumeFile && <p>Selected file: {resumeFile.name}</p>}
-<br />
-<button type="submit">Save Profile</button>
-<button type="button" onClick={handleResumeUpload}>Upload Resume</button>
-
-</form>
-)
-
+      <button type="button" onClick={() => navigate('/profile/edit')}>
+        Edit Profile
+      </button>
+    </div>
+  )
 }
 
 export default Profile
