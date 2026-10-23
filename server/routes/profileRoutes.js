@@ -154,7 +154,7 @@ router.get('/resume', requireAuth, async (req, res) => {
   }
 })
 
-// GET /api/profile/:userId - get a specific user's extended profile (Task 6.1)
+// GET /api/profile/:userId - get a specific user's extended profile
 router.get('/:userId', async (req, res) => {
   try {
     const user = await User.findById(req.params.userId).select('-password')
