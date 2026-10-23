@@ -7,13 +7,14 @@ const requireAuth = require('../middleware/auth')
 
 const router = express.Router()
 
-// Configure where uploaded resumes get saved and how they're named
+// Configure Multer to keep a clean, recognizable filename with a unique timestamp prefix
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/')
   },
   filename: (req, file, cb) => {
-    const uniqueName = `${req.userId}_${Date.now()}${path.extname(file.originalname)}`
+    const cleanOriginalName = file.originalname.replace(/\s+/g, '_')
+    const uniqueName = `${Date.now()}-${cleanOriginalName}`
     cb(null, uniqueName)
   }
 })
@@ -31,6 +32,19 @@ const upload = multer({
   }
 })
 
+// Helper to format user + profile combined data including resume metadata
+const buildCombinedResponse = (user, profile) => {
+  const userObj = user.toObject ? user.toObject() : user
+  const profileObj = profile && profile.toObject ? profile.toObject() : (profile || {})
+
+  return {
+    ...userObj,
+    ...profileObj,
+    resumeFileName: userObj.resumeFileName || null,
+    resumeUpdatedAt: userObj.updatedAt || null // Exposes upload/update date to the frontend
+  }
+}
+
 // GET /api/profile - get the logged-in user's user details AND extended profile
 router.get('/', requireAuth, async (req, res) => {
   try {
@@ -38,14 +52,7 @@ router.get('/', requireAuth, async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' })
 
     const profile = await Profile.findOne({ user_id: req.userId })
-
-    // Combine user account data and professional profile data into one object for the frontend
-    const combinedData = {
-      ...user.toObject(),
-      ...(profile ? profile.toObject() : {})
-    }
-
-    res.json(combinedData)
+    res.json(buildCombinedResponse(user, profile))
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
@@ -71,14 +78,12 @@ router.put('/', requireAuth, async (req, res) => {
   }
 
   try {
-    // 1. Update basic User info
     await User.findByIdAndUpdate(
       req.userId,
       { fullName, email, headline, location },
       { new: true, runValidators: true }
     )
 
-    // 2. Upsert extended Profile info (skills, links, experience, education, etc.)
     const profileFields = {
       user_id: req.userId,
       headline,
@@ -104,12 +109,7 @@ router.put('/', requireAuth, async (req, res) => {
     }
 
     const updatedUser = await User.findById(req.userId).select('-password')
-    const combinedResponse = {
-      ...updatedUser.toObject(),
-      ...profile.toObject()
-    }
-
-    res.json(combinedResponse)
+    res.json(buildCombinedResponse(updatedUser, profile))
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
@@ -126,7 +126,8 @@ router.post('/resume', requireAuth, upload.single('resumeFile'), async (req, res
       { new: true }
     ).select('-password')
 
-    res.json(user)
+    const profile = await Profile.findOne({ user_id: req.userId })
+    res.json(buildCombinedResponse(user, profile))
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
@@ -139,8 +140,32 @@ router.get('/resume', requireAuth, async (req, res) => {
     if (!user || !user.resumeFileName) {
       return res.status(404).json({ message: 'No resume uploaded' })
     }
-    res.download(path.join(__dirname, '..', 'uploads', user.resumeFileName))
+    
+    const filePath = path.join(__dirname, '..', 'uploads', user.resumeFileName)
+
+    // Format filename: fullname_resume.ext with spaces replaced by underscores
+    const sanitizedName = user.fullName ? user.fullName.replace(/\s+/g, '_') : 'user'
+    const ext = path.extname(user.resumeFileName) || '.pdf'
+    const downloadFilename = `${sanitizedName}_resume${ext}`
+
+    res.download(filePath, downloadFilename)
   } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
+// GET /api/profile/:userId - get a specific user's extended profile (Task 6.1)
+router.get('/:userId', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).select('-password')
+    if (!user) return res.status(404).json({ message: 'User not found' })
+
+    const profile = await Profile.findOne({ user_id: req.params.userId })
+    res.json(buildCombinedResponse(user, profile))
+  } catch (err) {
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'User not found' })
+    }
     res.status(500).json({ message: err.message })
   }
 })

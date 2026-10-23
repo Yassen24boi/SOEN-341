@@ -65,6 +65,50 @@ describe('CareerConnect Profile Feature Tests', () => {
             expect(res.body).toHaveProperty('location', 'Montreal, QC');
             expect(res.body.skills).toContain('JavaScript');
         });
+
+        it('AT-06.3: should return response without profile user_id for a user who has not created a profile yet', async () => {
+            // 1. Ensure no profile exists for the test user in the database
+            await Profile.deleteMany({ user_id: userId });
+
+            // 2. Fetch the profile as the logged-in user
+            const res = await request(app)
+                .get('/api/profile')
+                .set('Authorization', `Bearer ${token}`);
+
+            expect(res.statusCode).toEqual(200);
+            
+            // 3. Verify basic user account data is returned
+            expect(res.body).toHaveProperty('fullName', 'Test User');
+            expect(res.body).toHaveProperty('email');
+            
+            // 4. Verify profile-specific reference user_id is undefined (matches frontend empty-state check)
+            expect(res.body.user_id).toBeUndefined();
+        });
+    });
+
+    describe('GET /api/profile/:userId (Task 6.1)', () => {
+        it('should return 404 if the user does not exist', async () => {
+            const fakeId = new mongoose.Types.ObjectId();
+            const res = await request(app).get(`/api/profile/${fakeId}`);
+            
+            expect(res.statusCode).toEqual(404);
+            expect(res.body).toHaveProperty('message', 'User not found');
+        });
+
+        it('should successfully fetch a specific user profile and populate their account data', async () => {
+            await Profile.create({
+                user_id: userId,
+                headline: 'Frontend Engineer',
+                location: 'Vancouver, BC'
+            });
+
+            const res = await request(app)
+                .get(`/api/profile/${userId}`);
+            
+            expect(res.statusCode).toEqual(200);
+            expect(res.body).toHaveProperty('headline', 'Frontend Engineer');
+            expect(res.body).toHaveProperty('fullName', 'Test User'); // Verifying user_id population
+        });
     });
 
     describe('PUT /api/profile (Creation & Update / Upsert)', () => {
@@ -212,6 +256,29 @@ describe('CareerConnect Profile Feature Tests', () => {
 
             expect(res.statusCode).toEqual(404);
             expect(res.body).toHaveProperty('message', 'No resume uploaded');
+        });
+
+        it('should successfully upload a resume and retrieve it for download/preview', async () => {
+            // Mock a simple PDF file buffer to upload
+            const pdfBuffer = Buffer.from('%PDF-1.4 mock file content for testing');
+            
+            // 1. Upload the mocked resume file using .attach()
+            const uploadRes = await request(app)
+                .post('/api/profile/resume')
+                .set('Authorization', `Bearer ${token}`)
+                .attach('resumeFile', pdfBuffer, 'test_resume.pdf');
+
+            expect(uploadRes.statusCode).toEqual(200);
+            expect(uploadRes.body).toHaveProperty('resumeFileName');
+
+            // 2. Fetch the uploaded file back from the backend (Used by Preview and Download)
+            const downloadRes = await request(app)
+                .get('/api/profile/resume')
+                .set('Authorization', `Bearer ${token}`);
+
+            expect(downloadRes.statusCode).toEqual(200);
+            // Verify it was correctly parsed as a PDF for the browser to render
+            expect(downloadRes.headers['content-type']).toContain('application/pdf'); 
         });
     });
 });
