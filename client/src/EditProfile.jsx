@@ -17,7 +17,7 @@ function EditProfile(){
   const [errors, setErrors] = useState({})
 
   const [resumeFile, setResumeFile] = useState(null)
-  const [resumeFileName, setResumeFileName] = useState(null)
+  const [resumeLabel, setResumeLabel] = useState('');
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
@@ -61,7 +61,6 @@ function EditProfile(){
         }))
         setEducation(formattedEdu)
 
-        setResumeFileName(data.resumeFileName || null)
       } catch (err) {
         console.error(err)
         alert('Could not reach the server')
@@ -147,7 +146,6 @@ function EditProfile(){
           alert(resumeData.message || 'Profile saved, but resume upload failed')
           return
         }
-        setResumeFileName(resumeData.resumeFileName)
         setResumeFile(null)
       }
 
@@ -159,29 +157,35 @@ function EditProfile(){
     }
   }
 
-  async function handleDownloadResume() {
+  const handleUploadResume = async (e) => {
+    e.preventDefault();
+    
+    // Assuming you have a state named 'resumeFile' storing the selected file
+    if (!resumeFile) return alert('Please select a file first.');
+
+    const formData = new FormData();
+    formData.append('resumeFile', resumeFile);
+    
+    // Append the label to the payload
+    formData.append('label', resumeLabel || 'CV'); 
+
     try {
       const res = await fetch('http://localhost:5000/api/profile/resume', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (!res.ok) {
-        alert('Could not download resume')
-        return
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }, // Do NOT set Content-Type manually with FormData
+        body: formData
+      });
+      
+      if (res.ok) {
+        setResumeLabel(''); // Clear the input after success
+        window.location.reload(); 
+      } else {
+        alert('Failed to upload CV');
       }
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'resume.pdf'
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error(err)
-      alert('Could not reach the server')
+      console.error(err);
     }
-  }
+  };
 
   if (!token) return <p>You must be logged in to view this page.</p>
   if (loading) return <p>Loading profile...</p>
@@ -315,25 +319,39 @@ function EditProfile(){
         <button type="button" onClick={addEducation}>+ Add Education</button>
       </div>
 
-      <div className="form-row" style={{ borderTop: '1px solid #ccc', paddingTop: '15px' }}>
-        <label>Resume:</label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, height: '40px' }}>
-          {resumeFileName && !isEditingResume ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: "100%"}}>
-              <button type="button" style={{height: "100%"}} onClick={handleDownloadResume}>Download</button>
-              <button type="button" style={{height: "100%"}} onClick={() => setIsEditingResume(true)}>Replace</button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'row', gap: '6px' }}>
-              <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setResumeFile(e.target.files[0])} />
-              {resumeFileName && (
-                <button style={{width: "50%"}} type="button" onClick={() => { setIsEditingResume(false); setResumeFile(null); }}>
-                  Cancel Replace
-                </button>
-              )}
-            </div>
-          )}
+      <div style={{ borderTop: '1px solid #ccc',display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <h3 style={{ fontSize: '18px', marginBottom: '10px' }}>Upload a New CV</h3>
+        
+        {/* New Label Input */}
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px', color: '#555' }}>
+            CV Label (e.g., Software Engineer):
+          </label>
+          <input 
+            type="text" 
+            placeholder="e.g., Frontend CV" 
+            value={resumeLabel}
+            onChange={(e) => setResumeLabel(e.target.value)}
+            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }}
+          />
         </div>
+
+        {/* Existing File Input */}
+        <div style={{ marginBottom: '15px' }}>
+          <input 
+            type="file" 
+            accept=".pdf,.doc,.docx"
+            onChange={(e) => setResumeFile(e.target.files[0])}
+            style={{ width: '100%' }}
+          />
+        </div>
+
+        <button 
+          onClick={handleUploadResume} 
+          style={{ padding: '10px 20px', cursor: 'pointer', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}
+        >
+          Upload CV
+        </button>
       </div>
 
       <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>

@@ -55,48 +55,53 @@ function Profile() {
     return `${year}-${month}-${day}`
   }
 
-  async function handleDownloadResume() {
+async function handleDownloadResume(filename, label) {
     try {
-      const res = await fetch('http://localhost:5000/api/profile/resume', {
+      // Updated URL to target the specific file
+      const res = await fetch(`http://localhost:5000/api/profile/resume/${filename}`, {
         headers: { Authorization: `Bearer ${token}` }
-      })
+      });
+      
       if (!res.ok) {
-        alert('Could not download resume')
-        return
+        alert('Could not download resume');
+        return;
       }
 
       // Extract the correct filename and extension sent by the backend
-      let filename = 'resume.pdf'
-      const disposition = res.headers.get('content-disposition')
+      let downloadName = 'resume.pdf';
+      const disposition = res.headers.get('content-disposition');
       if (disposition && disposition.includes('filename=')) {
-        const filenameMatch = disposition.match(/filename="?([^"]+)"?/)
+        const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
         if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1]
+          downloadName = filenameMatch[1];
         }
-      } else if (profile?.fullName && profile?.resumeFileName) {
-        const sanitizedName = profile.fullName.replace(/\s+/g, '_')
-        const ext = profile.resumeFileName.substring(profile.resumeFileName.lastIndexOf('.'))
-        filename = `${sanitizedName}_resume${ext}`
+      } else if (profile?.fullName && label) {
+        // Fallback styling: fullname_label.ext
+        const sanitizedName = profile.fullName.replace(/\s+/g, '_');
+        const sanitizedLabel = label.replace(/\s+/g, '_');
+        const ext = filename.substring(filename.lastIndexOf('.'));
+        downloadName = `${sanitizedName}_${sanitizedLabel}_resume${ext}`;
       }
 
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = filename // Uses the correct extension (.docx, .doc, or .pdf)
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = downloadName; // Respects .docx, .doc, or .pdf
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error(err)
-      alert('Could not reach the server')
+      console.error(err);
+      alert('Could not reach the server');
     }
   }
 
-  const handlePreviewResume = async () => {
+  const handlePreviewResume = async (filename) => {
     try {
-      const res = await fetch('http://localhost:5000/api/profile/resume', {
+      // Updated URL to target the specific file
+      const res = await fetch(`http://localhost:5000/api/profile/resume/${filename}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) {
@@ -109,6 +114,40 @@ function Profile() {
     } catch (err) {
       console.error(err);
       alert('Could not reach the server');
+    }
+  };
+
+  const handleSetDefault = async (cvId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/profile/resume/${cvId}/default`, { 
+        method: 'PATCH', 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      if (res.ok) {
+        window.location.reload(); // Quick way to refresh the data
+      } else {
+        alert('Failed to set as default');
+      }
+    } catch (err) {
+      console.error('Failed to set default', err);
+    }
+  };
+
+  const handleDeleteResume = async (cvId) => {
+    if(window.confirm('Are you sure you want to delete this CV?')) {
+      try {
+        const res = await fetch(`http://localhost:5000/api/profile/resume/${cvId}`, { 
+          method: 'DELETE', 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          alert('Failed to delete CV');
+        }
+      } catch (err) {
+        console.error('Failed to delete CV', err);
+      }
     }
   };
 
@@ -239,48 +278,130 @@ function Profile() {
         </div>
       )}
 
-      {profile?.resumeFileName && (
-        <div className="form-row" style={{ borderTop: '1px solid #ccc', paddingTop: '15px' }}>
-          <label><strong>My CVs:</strong></label>
-          <div style={{ padding: '20px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9f9f9', marginTop: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p style={{ margin: '0 0 5px 0' }}><strong>File Name:</strong> {profile.resumeFileName}</p>
-                <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
-                  <strong>Upload Date:</strong> {profile.resumeUpdatedAt ? new Date(profile.resumeUpdatedAt).toLocaleString() : 'Recently uploaded'}
-                </p>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <button type="button" onClick={handleDownloadResume}>Download</button>
-                  {profile.resumeFileName.toLowerCase().endsWith('.pdf') ? (
-                    <button onClick={handlePreviewResume} style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}>
+      {profile?.resumes && profile.resumes.length > 0 && (
+        <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
+            <div style={{ textAlign: 'center', borderBottom: '2px solid #ccc', paddingBottom: '10px', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '20px', color: '#333' }}>My CVs</h3>
+            </div>
+            {profile.resumes.map((cv) => (
+              <div key={cv._id || cv.filename} style={{ 
+                width: '100%', 
+                padding: '20px', 
+                boxSizing: 'border-box',
+                border: cv.isDefault ? '2px solid #28a745' : '1px solid #e0e0e0', 
+                borderRadius: '8px', 
+                backgroundColor: '#ffffff', 
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)' 
+              }}>
+                
+                <div style={{ borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px' }}>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#333', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    {cv.label || 'CV'}
+                    {cv.isDefault && (
+                      <span style={{ padding: '4px 10px', backgroundColor: '#e6f4ea', color: '#1e8e3e', border: '1px solid #1e8e3e', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
+                        Default CV
+                      </span>
+                    )}
+                  </h4>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#444', wordBreak: 'break-all' }}>
+                    <strong>File:</strong> {cv.filename}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#888' }}>
+                    <strong>Uploaded:</strong> {cv.uploadedAt ? new Date(cv.uploadedAt).toLocaleString() : 'Recently uploaded'}
+                  </p>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  {!cv.isDefault && (
+                    <button 
+                      onClick={() => handleSetDefault(cv._id)} 
+                      style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', fontWeight: '500' }}
+                    >
+                      Set as Default
+                    </button>
+                  )}
+
+                  <button 
+                    type="button" 
+                    onClick={() => handleDownloadResume(cv.filename, cv.label)}
+                    style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#f8f9fa', color: '#333', border: '1px solid #ccc', borderRadius: '4px', fontWeight: '500' }}
+                  >
+                    Download
+                  </button>
+                  
+                  {cv.filename.toLowerCase().endsWith('.pdf') ? (
+                    <button 
+                      onClick={() => handlePreviewResume(cv.filename)} 
+                      style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: '500' }}
+                    >
                       Preview
                     </button>
                   ) : (
-                    <button onClick={() => alert('Preview is only available for PDF files. Please download to view Word documents.')} style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px' }}>
+                    <button 
+                      onClick={() => alert('Preview is only available for PDF files. Please download to view Word documents.')} 
+                      style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', fontWeight: '500' }}
+                    >
                       Preview (PDF Only)
                     </button>
                   )}
-              </div>
-            </div>
 
-            {/* PDF Preview Window */}
-            {previewUrl && (
-              <div style={{ marginTop: '20px', borderTop: '2px dashed #ccc', paddingTop: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <h4 style={{ margin: 0 }}>Resume Preview</h4>
-                  <button onClick={() => setPreviewUrl(null)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Close Preview</button>
+                  <button 
+                    onClick={() => handleDeleteResume(cv._id)} 
+                    style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: '500', marginLeft: 'auto' }}
+                  >
+                    Delete
+                  </button>
                 </div>
+              </div>
+            ))}
+          </div>
+
+          {previewUrl && (
+            <div style={{ 
+              position: 'fixed', 
+              top: 0, 
+              left: 0, 
+              width: '100vw', 
+              height: '100vh', 
+              backgroundColor: 'rgba(20, 20, 25, 0.85)', 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              zIndex: 9999 
+            }}>
+              <div style={{ 
+                backgroundColor: '#fff', 
+                width: '90%', 
+                maxWidth: '900px', 
+                height: '90vh', 
+                borderRadius: '8px', 
+                display: 'flex', 
+                flexDirection: 'column',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                overflow: 'hidden'
+              }}>
+                {/* Modal Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 25px', backgroundColor: '#ffffff', borderBottom: '1px solid #ddd' }}>
+                  <h3 style={{ margin: 0, color: '#333', fontSize: '22px' }}>Resume Preview</h3>
+                  <button 
+                    onClick={() => setPreviewUrl(null)} 
+                    style={{ background: '#dc3545', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px' }}
+                  >
+                    ✕ Close Preview
+                  </button>
+                </div>
+                
                 <iframe 
                   src={previewUrl} 
                   width="100%" 
-                  height="600px" 
+                  height="100%" 
                   title="Resume PDF Preview" 
-                  style={{ border: '1px solid #ccc', borderRadius: '4px' }} 
+                  style={{ border: 'none', flexGrow: 1, backgroundColor: '#525659' }} 
                 />
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 

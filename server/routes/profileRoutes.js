@@ -4,6 +4,7 @@ const path = require('path')
 const User = require('../models/User')
 const Profile = require('../models/Profile')
 const requireAuth = require('../middleware/auth')
+const fs = require('fs');
 
 const router = express.Router()
 
@@ -13,9 +14,8 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/')
   },
   filename: (req, file, cb) => {
-    const cleanOriginalName = file.originalname.replace(/\s+/g, '_')
-    const uniqueName = `${Date.now()}-${cleanOriginalName}`
-    cb(null, uniqueName)
+    const cleanName = file.originalname.replace(/\s+/g, '_')
+    cb(null, cleanName)
   }
 })
 
@@ -37,12 +37,7 @@ const buildCombinedResponse = (user, profile) => {
   const userObj = user.toObject ? user.toObject() : user
   const profileObj = profile && profile.toObject ? profile.toObject() : (profile || {})
 
-  return {
-    ...userObj,
-    ...profileObj,
-    resumeFileName: userObj.resumeFileName || null,
-    resumeUpdatedAt: userObj.updatedAt || null // Exposes upload/update date to the frontend
-  }
+  return { ...userObj, ...profileObj }
 }
 
 // GET /api/profile - get the logged-in user's user details AND extended profile
@@ -119,34 +114,96 @@ router.put('/', requireAuth, async (req, res) => {
 router.post('/resume', requireAuth, upload.single('resumeFile'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'No file uploaded' })
+    
+    const user = await User.findById(req.userId)
+    const label = req.body.label || 'Software CV'
+    const isFirstCV = user.resumes.length === 0
 
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      { resumeFileName: req.file.filename },
-      { new: true }
-    ).select('-password')
+    // If it's the first CV, automatically make it the default
+    user.resumes.push({
+      filename: req.file.filename,
+      label: label,
+      isDefault: isFirstCV
+    })
 
+    await user.save()
+    const updatedUser = await User.findById(req.userId).select('-password')
     const profile = await Profile.findOne({ user_id: req.userId })
-    res.json(buildCombinedResponse(user, profile))
+    res.json(buildCombinedResponse(updatedUser, profile))
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
 })
 
-// GET /api/profile/resume - download the logged-in user's resume
-router.get('/resume', requireAuth, async (req, res) => {
+// PATCH /api/profile/resume/:id/default - Set a specific CV as default
+router.patch('/resume/:id/default', requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.userId)
-    if (!user || !user.resumeFileName) {
-      return res.status(404).json({ message: 'No resume uploaded' })
+    const resumeId = req.params.id
+
+    const resumeExists = user.resumes.some(r => r._id.toString() === resumeId)
+    if (!resumeExists) return res.status(404).json({ message: 'Resume not found' })
+
+    // Set all to false, then the target to true
+    user.resumes.forEach(r => {
+      r.isDefault = (r._id.toString() === resumeId)
+    })
+
+    await user.save()
+    const updatedUser = await User.findById(req.userId).select('-password')
+    const profile = await Profile.findOne({ user_id: req.userId })
+    res.json(buildCombinedResponse(updatedUser, profile))
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
+// DELETE /api/profile/resume/:id - Delete CV & assign new default if needed
+router.delete('/resume/:id', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId)
+    const resumeIndex = user.resumes.findIndex(r => r._id.toString() === req.params.id)
+    
+    if (resumeIndex === -1) return res.status(404).json({ message: 'Resume not found' })
+
+    const deletedCV = user.resumes[resumeIndex]
+    user.resumes.splice(resumeIndex, 1)
+
+    // If the deleted CV was the default, make the most recent remaining CV the default
+    if (deletedCV.isDefault && user.resumes.length > 0) {
+      // Sort descending by uploadedAt and set the first one to default
+      user.resumes.sort((a, b) => b.uploadedAt - a.uploadedAt)
+      user.resumes[0].isDefault = true
+    }
+
+    await user.save()
+    
+    // Cleanup file from server
+    const filePath = path.join(__dirname, '..', 'uploads', deletedCV.filename)
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+
+    const updatedUser = await User.findById(req.userId).select('-password')
+    const profile = await Profile.findOne({ user_id: req.userId })
+    res.json(buildCombinedResponse(updatedUser, profile))
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
+// GET /api/profile/resume/:filename - download or preview a specific resume
+router.get('/resume/:filename', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId)
+    const targetResume = user.resumes.find(r => r.filename === req.params.filename)
+    
+    if (!targetResume) {
+      return res.status(404).json({ message: 'Resume not found' })
     }
     
-    const filePath = path.join(__dirname, '..', 'uploads', user.resumeFileName)
-
-    // Format filename: fullname_resume.ext with spaces replaced by underscores
+    const filePath = path.join(__dirname, '..', 'uploads', targetResume.filename)
     const sanitizedName = user.fullName ? user.fullName.replace(/\s+/g, '_') : 'user'
-    const ext = path.extname(user.resumeFileName) || '.pdf'
-    const downloadFilename = `${sanitizedName}_resume${ext}`
+    const ext = path.extname(targetResume.filename) || '.pdf'
+    const downloadFilename = `${sanitizedName}_${targetResume.label.replace(/\s+/g, '_')}${ext}`
 
     res.download(filePath, downloadFilename)
   } catch (err) {
@@ -154,7 +211,7 @@ router.get('/resume', requireAuth, async (req, res) => {
   }
 })
 
-// GET /api/profile/:userId - get a specific user's extended profile (Task 6.1)
+// GET /api/profile/:userId - get a specific user's extended profile
 router.get('/:userId', async (req, res) => {
   try {
     const user = await User.findById(req.params.userId).select('-password')
