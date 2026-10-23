@@ -64,11 +64,26 @@ function Profile() {
         alert('Could not download resume')
         return
       }
+
+      // Extract the correct filename and extension sent by the backend
+      let filename = 'resume.pdf'
+      const disposition = res.headers.get('content-disposition')
+      if (disposition && disposition.includes('filename=')) {
+        const filenameMatch = disposition.match(/filename="?([^"]+)"?/)
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1]
+        }
+      } else if (profile?.fullName && profile?.resumeFileName) {
+        const sanitizedName = profile.fullName.replace(/\s+/g, '_')
+        const ext = profile.resumeFileName.substring(profile.resumeFileName.lastIndexOf('.'))
+        filename = `${sanitizedName}_resume${ext}`
+      }
+
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'resume.pdf'
+      a.download = filename // Uses the correct extension (.docx, .doc, or .pdf)
       document.body.appendChild(a)
       a.click()
       a.remove()
@@ -232,18 +247,24 @@ function Profile() {
               <div>
                 <p style={{ margin: '0 0 5px 0' }}><strong>File Name:</strong> {profile.resumeFileName}</p>
                 <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
-                  <strong>Upload Date:</strong> {profile.resumeUpdatedAt ? new Date(profile.resumeUpdatedAt).toLocaleDateString() : 'Recently uploaded'}
+                  <strong>Upload Date:</strong> {profile.resumeUpdatedAt ? new Date(profile.resumeUpdatedAt).toLocaleString() : 'Recently uploaded'}
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <button type="button" onClick={handleDownloadResume}>Download</button>
-                  <button onClick={handlePreviewResume} style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}>
-                  Preview
-                </button>
+                  {profile.resumeFileName.toLowerCase().endsWith('.pdf') ? (
+                    <button onClick={handlePreviewResume} style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}>
+                      Preview
+                    </button>
+                  ) : (
+                    <button onClick={() => alert('Preview is only available for PDF files. Please download to view Word documents.')} style={{ padding: '8px 16px', cursor: 'pointer', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px' }}>
+                      Preview (PDF Only)
+                    </button>
+                  )}
               </div>
             </div>
 
-            {/* AT-06.2: PDF Preview Window */}
+            {/* PDF Preview Window */}
             {previewUrl && (
               <div style={{ marginTop: '20px', borderTop: '2px dashed #ccc', paddingTop: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
