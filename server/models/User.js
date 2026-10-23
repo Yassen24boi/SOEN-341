@@ -25,10 +25,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  resumeFileName: {
+  location: {
     type: String,
-    default: null
-  }
+    default: ''
+  },
+  resumes: [{
+    filename: { type: String, required: true },
+    label: { type: String, default: 'CV' },
+    isDefault: { type: Boolean, default: false },
+    uploadedAt: { type: Date, default: Date.now }
+  }]
 }, { timestamps: true })
 
 // Runs automatically right before a user document is saved.
