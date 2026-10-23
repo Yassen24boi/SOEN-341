@@ -167,9 +167,9 @@ and linked to their corresponding user stories.
 | TBD | Implement Backend API Integration | Michel Yosufov | Oct 21 | High | Not Started |
 | TBD | Begin Recruiter Dashboard Implementation | Michel Yosufov | Oct 22 | Medium | Not Started |
 | TBD | Implement Initial Job Posting Management | Michel Yosufov | Oct 23 | Medium | Not Started |
-| TBD | Configure GitHub Actions CI Pipeline | To Be Assigned | Oct 20 | High | Not Started |
-| TBD | Implement Automated Build and Test Checks | To Be Assigned | Oct 22 | High | Not Started |
-| TBD | Verify CI Pipeline on Pull Requests | To Be Assigned | Oct 23 | High | Not Started |
+| TBD | Configure GitHub Actions CI Pipeline | Julia Kyrychuk | Oct 20 | High | Not Started |
+| TBD | Implement Automated Build and Test Checks | Julia Kyrychuk | Oct 22 | High | Not Started |
+| TBD | Verify CI Pipeline on Pull Requests | Julia Kyrychuk | Oct 23 | High | Not Started |
 | TBD | Prepare Sprint 2 Summary Report | Yassen Hegazy | Oct 25 | Medium | Not Started |
 | TBD | Prepare Sprint 2 Demonstration | All Members | Oct 25 | High | Not Started |
 
@@ -178,7 +178,7 @@ and linked to their corresponding user stories.
 ## 7. Acceptance Testing
 
 **Testing Coordinator:** Julia Kyrychuk  
-**GitHub Issue Management:** Noor Rabie  
+**GitHub Issue Management:** Julia Kyrychuk
 **Test Contributors:** All Team Members
 
 At least two acceptance tests must be created for each
@@ -208,7 +208,7 @@ With 19 user stories, the team must prepare at least
 
 ## 8. Continuous Integration
 
-**Responsible:** To Be Assigned  
+**Responsible:** Julia Kyrychuk
 **Target Completion:** October 23, 2026
 
 ### Planned Tasks
