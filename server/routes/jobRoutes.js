@@ -5,6 +5,22 @@ const Job = require('../models/Job')
 const Application = require('../models/Application')
 const router = express.Router()
 
+const PAGE_SIZE = 10
+
+// Turns characters like . or ( into plain text, so a search for "c++" doesn't break the query
+function escapeRegex(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Job seekers only see jobs that are open and whose deadline hasn't passed (or that have no deadline)
+function visibleJobsFilter() {
+  return {
+    status: 'open',
+    $or: [{ deadline: null }, { deadline: { $gt: new Date() } }]
+  }
+}
+
+
 async function requireRecruiter(req, res, next) {
   try {
     const user = await User.findById(req.userId).select('role')
@@ -28,6 +44,52 @@ async function getOwnedJob(req, res) {
   }
   return job
 }
+// US-08, US-09, US-10: list open jobs, 10 per page, with optional keyword search and filters
+router.get('/', async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim()
+    const location = String(req.query.location || '')
+    const category = String(req.query.category || '')
+    const type = String(req.query.type || '')
+    const page = Math.max(parseInt(req.query.page) || 1, 1)
+
+    // Every condition in this list must be true for a job to be returned
+    const conditions = [visibleJobsFilter()]
+    if (q) {
+      const keyword = new RegExp(escapeRegex(q), 'i')
+      conditions.push({ $or: [{ title: keyword }, { company: keyword }, { description: keyword }] })
+    }
+    if (location) conditions.push({ location })
+    if (category) conditions.push({ category })
+    if (type) conditions.push({ type })
+    const filter = { $and: conditions }
+
+    const total = await Job.countDocuments(filter)
+    const jobs = await Job.find(filter)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip((page - 1) * PAGE_SIZE)
+      .limit(PAGE_SIZE)
+      .select('title company location category type salaryMin salaryMax deadline createdAt')
+      .lean()
+    res.json({ jobs, page, totalPages: Math.ceil(total / PAGE_SIZE), total })
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load jobs' })
+  }
+})
+// US-10: the options for the filter dropdowns
+router.get('/filters', async (req, res) => {
+  try {
+    const locations = await Job.distinct('location', visibleJobsFilter())
+    res.json({
+      locations: locations.filter(Boolean).sort(),
+      categories: Job.JOB_CATEGORIES,
+      types: Job.schema.path('type').enumValues
+    })
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load filters' })
+  }
+})
+
 router.post('/', requireAuth, requireRecruiter, async (req, res) => {
   try {
     const { title, company, location, type, description } = req.body
