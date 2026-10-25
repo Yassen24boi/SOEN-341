@@ -124,6 +124,22 @@ Full completion is planned for Sprint 3.
 
 ---
 
+### Feature 5 — Quality Assurance & Test Automation
+
+**Target Completion: October 24, 2026**
+
+| Issue # | Issue Title | Issue Type | Responsible Member | Target Date | Priority | Status |
+|---|---|---|---|---|---|---|
+| #33 | US-20: Create an acceptance tests automation pipeline | User Story | Julia Kyrychuk | Oct 22 | High | Not Started |
+| #34 | US-21: Create API test cases for backend validation | User Story | Julia Kyrychuk/Yassen Hegazy | Oct 21 | High | Not Started |
+| #35 | US-22: Create UI test cases for frontend validation | User Story | Julia Kyrychuk/Yassen Hegazy | Oct 21 | High | Not Started |
+
+**Expected Deliverable:**
+
+A fully functional CI pipeline that runs automated API and UI acceptance tests on Pull Requests to verify that all conditions of satisfaction are met before code is merged.
+
+---
+
 ## 5. Sprint 1 User Stories — Review & Testing
 
 The following Sprint 1 user stories will be reviewed
