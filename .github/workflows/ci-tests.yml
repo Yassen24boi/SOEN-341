@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, develop, Feature/create-an-acceptance-tests-automation-pipeline-us-20]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -32,7 +32,7 @@ jobs:
         working-directory: server
     env:
       JWT_SECRET: test_secret
-      DATABASE_URL: mongodb://localhost:27017/careerconnect_test
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     services:
       mongo:
         image: mongo:7
