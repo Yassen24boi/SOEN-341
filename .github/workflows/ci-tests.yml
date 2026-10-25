@@ -2,7 +2,7 @@ name: CI Tests
 
 on:
   push:
-    branches: [main, develop, Feature/create-an-acceptance-tests-automation-pipeline-us-20]
+    branches: [main, develop]
   pull_request:
     branches: [main]
   workflow_dispatch:
