@@ -112,7 +112,7 @@ function RecruiterDashboard() {
       </form>
       {message && <p>{message}</p>}
 
-      <h2>My postings</h2>
+      <h2>My postings:</h2>
       {jobs.length === 0 && <p>No postings yet.</p>}
       {jobs.map((job) => (
         <div key={job._id} style={{ border: '1px solid #888', borderRadius: 6, padding: 12, marginBottom: 10 }}>
@@ -133,10 +133,45 @@ function RecruiterDashboard() {
               {applications.length === 0 && <p>No applications yet.</p>}
               {applications.map((a) => (
                 <div key={a._id} style={{ borderTop: '1px solid #555', padding: '6px 0' }}>
-                  <div>{a.applicant?.name || a.applicant?.fullName || a.applicant?.email}</div>
-                  <div>{a.applicant?.email}</div>
-                  {a.applicant?.headline && <div>{a.applicant.headline}</div>}
-                  <div>Applied {new Date(a.createdAt).toLocaleDateString()}</div>
+                  <div>Name: {a.applicant?.name || a.applicant?.fullName || a.applicant?.email}</div>
+                  <div>Email: {a.applicant?.email}</div>
+                  {a.applicant?.headline && <div>Headline: {a.applicant.headline}</div>}
+                  <div>Applied on: {new Date(a.createdAt).toLocaleDateString()}</div>
+
+                  {a.resumeFilename ? (
+                    <div style={{marginTop: 6}}>
+                      <a
+                        href={`http://localhost:5000/uploads/${a.resumeFilename}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                        style={{color: '#4dabf7', textDecoration: 'underline'}}
+                      >
+                        Download Attached Resume ({a.resumeFilename})
+                      </a>
+                    </div>
+                  ) : (
+                    <div style={{fontSize: '13px', color: '#888', marginTop: 4}}>
+                      No specific resume file attached
+                    </div>
+                  )}
+                  {a.coverLetterFilename ? (
+                    <div style={{marginTop: 6}}>
+                      <a
+                        href={`http://localhost:5000/uploads/${a.coverLetterFilename}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                        style={{color: '#4dabf7', textDecoration: 'underline'}}
+                      >
+                        Download Cover Letter ({a.coverLetterFilename})
+                      </a>
+                    </div>
+                  ) : (
+                    <div style={{fontSize: '13px', color: '#888', marginTop: 4}}>
+                      No cover letter attached
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

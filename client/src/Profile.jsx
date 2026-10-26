@@ -208,10 +208,8 @@ async function handleDownloadResume(filename, label) {
 
       {profile?.location && (
         <div className="form-row">
-          <label><strong>Location:</strong></label>
-          <div className="view-box-style">
-            <p>{profile.location}</p>
-          </div>
+          <label><strong>Location:</strong></label>         
+            <p>{profile.location}</p>        
         </div>
       )}
 
