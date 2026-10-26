@@ -69,7 +69,6 @@ function JobDetails(){
                 setProfileMissingCv(true)
             } else {
                 setUserResumes(resumes)
-
                 const defaultCV = resumes.find(r => r.isDefault) || resumes[0]
                 setSelectedResumeFilename(defaultCV.filename)
                 setProfileMissingCv(false)

@@ -1,6 +1,6 @@
 //import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import '@testing-library/jest-dom';
 
 // Import the components to test
@@ -8,6 +8,7 @@ import CreateAccount from '../CreateAccount';
 import Login from '../Login';
 import Profile from '../Profile';
 import EditProfile from '../EditProfile';
+import JobDetails from '../JobDetails';
 
 // Mock the window.alert and fetch API globally
 global.alert = jest.fn();
@@ -316,6 +317,117 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
         expect(fetch).toHaveBeenCalledWith('http://localhost:5000/api/profile/resume/cv1', expect.objectContaining({
           method: 'DELETE'
         }));
+      });
+    });
+  });
+
+  describe('Sprint 2: US-12 - Job Application Flow (JobDetails.jsx)', () => {
+    beforeEach(() => {
+      localStorage.setItem('token', 'mock_token');
+    });
+
+    it('AT-12.2: should prompt the user with a link to upload a CV if their profile has no CVs', async () => {
+      // Mock loading job details
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          _id: 'job123',
+          title: 'Software Engineer',
+          company: 'Tech Inc',
+          description: 'Build things',
+          alreadyApplied: false
+        }),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/jobs/job123']}>
+          <JobDetails />
+        </MemoryRouter>
+      );
+
+      // Wait for job details to load and Apply button to appear
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Apply Now/i })).toBeInTheDocument();
+      });
+
+      // Mock profile fetch returning zero CVs
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ resumes: [] }),
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Apply Now/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('You do not have a CV uploaded to your profile.')).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /Go to your profile to upload a CV →/i })).toBeInTheDocument();
+      });
+    });
+
+    it('AT-12.1: should render CV picker with default CV pre-selected and submit successfully', async () => {
+      // 1. Mock initial job details fetch on mount
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          _id: 'job123',
+          title: 'Software Engineer',
+          company: 'Tech Inc',
+          description: 'Build things',
+          alreadyApplied: false
+        }),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/jobs/job123']}>
+          <Routes>
+            <Route path="/jobs/:id" element={<JobDetails />}/>
+          </Routes>
+        </MemoryRouter>
+      );
+
+      // Wait for job details to load
+      const applyButton = await screen.findByRole('button', { name: /Apply Now/i });
+      expect(applyButton).toBeInTheDocument();
+
+      // 2. Mock profile fetch returning multiple CVs when clicking Apply
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          resumes: [
+            { _id: 'cv1', filename: 'default.pdf', label: 'Default CV', isDefault: true },
+            { _id: 'cv2', filename: 'other.pdf', label: 'Other CV', isDefault: false },
+          ],
+        }),
+      });
+
+      fireEvent.click(applyButton);
+
+      // Wait for CV picker modal to appear and verify default selection
+      await waitFor(() => {
+        expect(screen.getByText('Select CV for Application')).toBeInTheDocument();
+      });
+
+      const select = screen.getByRole('combobox');
+      expect(select.value).toBe('default.pdf');
+
+      // 3. Mock application POST submission response
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ message: 'Application submitted successfully!' }),
+      });
+
+      const confirmButton = screen.getByRole('button', { name: /Confirm Application/i });
+      fireEvent.click(confirmButton);
+
+      // Verify API call and success alert
+      await waitFor(() => {
+        expect(fetch).toHaveBeenCalledWith(
+          'http://localhost:5000/api/jobs/job123/apply',
+          expect.objectContaining({
+            method: 'POST',
+          })
+        );
+        expect(global.alert).toHaveBeenCalledWith('Application submitted successfully!');
       });
     });
   });

@@ -157,7 +157,7 @@ router.get('/mine', requireAuth, requireRecruiter, async (req, res) => {
 router.post('/:id/apply', requireAuth, upload.single('coverLetterFile'), async (req, res) => {
   try {
     const job = await Job.findById(req.params.id)
-    if (!job || job.status !== 'open') return res.status(404).json({ message: 'Job not available' })
+    if (!job || job.status !== 'open' || (job.deadline && job.deadline <= new Date())) return res.status(404).json({ message: 'Job not available' })
 
     const { resumeFilename } = req.body
     const coverLetterFilename = req.file ? req.file.filename : null
