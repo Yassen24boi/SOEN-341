@@ -5,6 +5,7 @@ import CreateAccount from './CreateAccount'
 import EditProfile from './EditProfile'
 import './App.css'
 import RecruiterDashboard from './RecruiterDashboard'
+import JobList from './JobList'
 
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/recruiter" element={<RecruiterDashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/edit" element={<EditProfile/>}/>
+        <Route path="/jobs" element={<JobList />} />
         <Route path="/" element={<Login />} />
       </Routes>
     </BrowserRouter>
