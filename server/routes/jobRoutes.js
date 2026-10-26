@@ -3,6 +3,8 @@ const requireAuth = require('../middleware/auth')
 const User = require('../models/User')
 const Job = require('../models/Job')
 const Application = require('../models/Application')
+const jwt = require('jsonwebtoken')
+const mongoose = require('mongoose')
 const router = express.Router()
 
 const PAGE_SIZE = 10
@@ -17,6 +19,19 @@ function visibleJobsFilter() {
   return {
     status: 'open',
     $or: [{ deadline: null }, { deadline: { $gt: new Date() } }]
+  }
+}
+
+
+// Returns the logged-in user's id if a valid token was sent, otherwise null.
+// Unlike requireAuth, it never blocks the request: logged-out visitors can still see the page.
+function getOptionalUserId(req) {
+  const authHeader = req.headers.authorization || ''
+  if (!authHeader.startsWith('Bearer ')) return null
+  try {
+    return jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET).userId
+  } catch (err) {
+    return null
   }
 }
 
@@ -115,6 +130,28 @@ router.get('/mine', requireAuth, requireRecruiter, async (req, res) => {
     res.status(500).json({ message: 'Could not load postings' })
   }
 })
+// US-11: full details of one job. If the user is logged in, also says whether they already applied.
+// This must stay below GET /mine, otherwise "/mine" would be treated as a job id.
+router.get('/:id', async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Job not found' })
+    }
+    const job = await Job.findById(req.params.id).lean()
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' })
+    }
+
+    const userId = getOptionalUserId(req)
+    const alreadyApplied = userId
+      ? Boolean(await Application.exists({ job: job._id, applicant: userId }))
+      : false
+    res.json({ ...job, alreadyApplied })
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load job' })
+  }
+})
+
 router.put('/:id', requireAuth, requireRecruiter, async (req, res) => {
   try {
     const job = await getOwnedJob(req, res)
