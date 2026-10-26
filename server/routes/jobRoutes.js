@@ -6,6 +6,29 @@ const Application = require('../models/Application')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const router = express.Router()
+const multer = require('multer')
+const path = require('path')
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => {
+    const cleanName = file.originalname.replace(/\s+/g, '_')
+    cb(null, `${Date.now()}_${cleanName}`)
+  }
+})
+
+const upload = multer({
+  storage,
+  limits: {fileSize: 10 * 1024 * 1024},
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.pdf', '.doc', '.docx']
+    if (allowed.includes(path.extname(file.originalname).toLowerCase())){
+      cb(null,true)
+    } else {
+      cb(new Error('Only PDF, DOC or DOCX files are allowed'))
+    }
+  }
+})
 
 const PAGE_SIZE = 10
 
@@ -130,6 +153,41 @@ router.get('/mine', requireAuth, requireRecruiter, async (req, res) => {
     res.status(500).json({ message: 'Could not load postings' })
   }
 })
+
+router.post('/:id/apply', requireAuth, upload.single('coverLetterFile'), async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id)
+    if (!job || job.status !== 'open') return res.status(404).json({ message: 'Job not available' })
+
+    const { resumeFilename } = req.body
+    const coverLetterFilename = req.file ? req.file.filename : null
+
+    const app = await Application.create({ 
+      job: job._id, 
+      applicant: req.userId, 
+      resumeFilename: resumeFilename || null,
+      coverLetterFilename: coverLetterFilename
+    })
+    res.status(201).json(app)
+  } catch (err) {
+    if (err.code === 11000) return res.status(409).json({ message: 'Already applied' })
+    res.status(500).json({ message: 'Could not apply' })
+  }
+})
+
+router.get('/:id/applications', requireAuth, requireRecruiter, async (req, res) => {
+  try {
+    const job = await getOwnedJob(req, res)
+    if (!job) return
+    const apps = await Application.find({ job: job._id })
+      .sort({ createdAt: -1 })
+      .populate('applicant', '-password')
+    res.json(apps)
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load applications' })
+  }
+})
+
 // US-11: full details of one job. If the user is logged in, also says whether they already applied.
 // This must stay below GET /mine, otherwise "/mine" would be treated as a job id.
 router.get('/:id', async (req, res) => {
@@ -193,27 +251,5 @@ router.delete('/:id', requireAuth, requireRecruiter, async (req, res) => {
     res.status(500).json({ message: 'Could not delete posting' })
   }
 })
-router.get('/:id/applications', requireAuth, requireRecruiter, async (req, res) => {
-  try {
-    const job = await getOwnedJob(req, res)
-    if (!job) return
-    const apps = await Application.find({ job: job._id })
-      .sort({ createdAt: -1 })
-      .populate('applicant', '-password')
-    res.json(apps)
-  } catch (err) {
-    res.status(500).json({ message: 'Could not load applications' })
-  }
-})
-router.post('/:id/apply', requireAuth, async (req, res) => {
-  try {
-    const job = await Job.findById(req.params.id)
-    if (!job || job.status !== 'open') return res.status(404).json({ message: 'Job not available' })
-    const app = await Application.create({ job: job._id, applicant: req.userId })
-    res.status(201).json(app)
-  } catch (err) {
-    if (err.code === 11000) return res.status(409).json({ message: 'Already applied' })
-    res.status(500).json({ message: 'Could not apply' })
-  }
-})
+
 module.exports = router

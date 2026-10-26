@@ -5,6 +5,7 @@ const connectDB = require('./config/db')
 const authRoutes = require('./routes/authRoutes')
 const profileRoutes = require('./routes/profileRoutes')
 const jobRoutes = require('./routes/jobRoutes')
+const path = require('path')
 
 const app = express()
 
@@ -15,6 +16,8 @@ if (process.env.NODE_ENV !== 'test') {
 
 app.use(cors())
 app.use(express.json())
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' })
