@@ -5,11 +5,14 @@ import CreateAccount from './CreateAccount'
 import EditProfile from './EditProfile'
 import './App.css'
 import RecruiterDashboard from './RecruiterDashboard'
-
+import Navbar from "./Components/Navbar"
+import './Components/Navbar.css'
 
 function App() {
   return (
     <BrowserRouter>
+      <Navbar/>
+    
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/create-account" element={<CreateAccount />} />

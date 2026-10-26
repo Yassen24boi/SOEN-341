@@ -21,6 +21,7 @@ function Login() {
           return
         }
         localStorage.setItem('token', data.token)
+        localStorage.setItem('role', data.user.role)
 
         // Task 4.4: Redirect based on profile status and role
         if (data.user.role === 'jobseeker' && !data.user.hasProfile) {
