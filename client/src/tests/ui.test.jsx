@@ -156,8 +156,7 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
     it('should prevent form submission and alert the user if an experience end date is before the start date', async () => {
       fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ fullName: 'Jane Doe', experience: [], education: [] }),
-      });
+        json: async () => ({ fullName: 'Jane Doe', email: 'jane@example.com', experience: [], education: [] }),      });
 
       render(
         <MemoryRouter>
