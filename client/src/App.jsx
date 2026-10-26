@@ -3,6 +3,8 @@ import Login from './Login'
 import Profile from './Profile'
 import CreateAccount from './CreateAccount'
 import EditProfile from './EditProfile'
+import JobListings from './JobListings'
+import JobDetails from './JobDetails'
 import './App.css'
 import RecruiterDashboard from './RecruiterDashboard'
 import Navbar from "./Components/Navbar"
@@ -19,7 +21,9 @@ function App() {
         <Route path="/recruiter" element={<RecruiterDashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/edit" element={<EditProfile/>}/>
-        <Route path="/" element={<Login />} />
+        <Route path="/jobs" element={<JobListings/>}/>
+        <Route path="/jobs/:id" element={<JobDetails/>}/>
+        <Route path="/" element={<JobListings/>} />
       </Routes>
     </BrowserRouter>
   )

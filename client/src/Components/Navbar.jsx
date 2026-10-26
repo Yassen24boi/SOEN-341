@@ -17,6 +17,7 @@ function Navbar() {
             <div className="navbar-brand">CareerConnect</div>
             <div className="navbar-links">
                 <Link to="/">Home</Link>
+                <Link to="/jobs">Jobs</Link>
                 {token && role == 'recruiter' && (
                     <Link to='/recruiter'>Dashboard</Link>
                 )}
