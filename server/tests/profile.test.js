@@ -34,7 +34,7 @@ describe('CareerConnect Profile Feature Tests', () => {
             role: 'jobseeker'
         });
 
-        // Generate a valid JWT token matching your requireAuth middleware format
+        // Generate a valid JWT token matching requireAuth middleware format
         token = jwt.sign({ userId: userId, role: testUser.role }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '1h' });
     });
 
