@@ -259,15 +259,21 @@ function EditProfile(){
             
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
               <div>
-                <label style={{ fontSize: '12px', display: 'block' }}>Start Date:</label>
-                <input type="date" value={exp.from ? exp.from.substring(0,10) : ''} onChange={(e) => {
-                  const newExp = [...experience]; newExp[index].from = e.target.value; setExperience(newExp);
-                }} />
+                <label htmlFor={`startDate-${index}`} style={{ fontSize: '12px', display: 'block' }}>Start Date:</label>
+                <input 
+                  id={`startDate-${index}`}
+                  type="date" 
+                  value={exp.from ? exp.from.substring(0,10) : ''} 
+                  onChange={(e) => {
+                    const newExp = [...experience]; newExp[index].from = e.target.value; setExperience(newExp);
+                  }} 
+                />
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', display: 'block' }}>End Date:</label>
+                <label htmlFor={`endDate-${index}`} style={{ fontSize: '12px', display: 'block' }}>End Date:</label>
                 <input 
+                  id={`endDate-${index}`}
                   type="date" 
                   value={exp.to && !exp.current ? exp.to.substring(0,10) : ''} 
                   disabled={exp.current} 
