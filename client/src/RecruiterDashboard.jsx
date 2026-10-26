@@ -26,6 +26,7 @@ function RecruiterDashboard() {
 
   useEffect(() => {
     if (!token) navigate('/login')
+    //eslint-disable-next-line react-hooks/set-state-in-effect
     else loadJobs()
     // eslint-disable-next-line
   }, [])

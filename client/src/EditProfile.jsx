@@ -18,11 +18,9 @@ function EditProfile(){
 
   const [resumeFile, setResumeFile] = useState(null)
   const [resumeLabel, setResumeLabel] = useState('');
-  const [loading, setLoading] = useState(true)
-  const navigate = useNavigate()
-
-  const [isEditingResume, setIsEditingResume] = useState(false)
   const token = localStorage.getItem('token')
+  const [loading, setLoading] = useState(!!token)
+  const navigate = useNavigate()
 
   useEffect(() => {
     async function loadProfile() {
@@ -68,8 +66,9 @@ function EditProfile(){
         setLoading(false)
       }
     }
-    if (token) loadProfile()
-    else setLoading(false)
+    if (token) {
+      loadProfile()
+    }
   }, [token])
 
   const addExperience = () => {

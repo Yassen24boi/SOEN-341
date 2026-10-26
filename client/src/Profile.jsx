@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom"
 
 function Profile() {
   const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [previewUrl, setPreviewUrl] = useState(null)
   const token = localStorage.getItem('token')
+  const [loading, setLoading] = useState(!!token)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -40,8 +40,6 @@ function Profile() {
 
     if (token) {
       loadProfile()
-    } else {
-      setLoading(false)
     }
   }, [token])
 
