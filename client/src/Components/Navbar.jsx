@@ -23,7 +23,10 @@ function Navbar() {
                 )}
 
                 {token && role == 'jobseeker' && (
+                    <>
                     <Link to="/profile">Profile</Link>
+                    <Link to="/applications">Applications</Link>
+                    </>
                 )}
                 
                 {!token ? (

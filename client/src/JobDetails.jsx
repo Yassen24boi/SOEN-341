@@ -207,6 +207,8 @@ function JobDetails(){
                     )}
                 </div>
             )}
+
+            {applied && <Link to='/applications' style={{width: '800px', textAlign: 'center'}}>My Applications →</Link>}
         </div>
     )
 }

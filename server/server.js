@@ -5,6 +5,7 @@ const connectDB = require('./config/db')
 const authRoutes = require('./routes/authRoutes')
 const profileRoutes = require('./routes/profileRoutes')
 const jobRoutes = require('./routes/jobRoutes')
+const applicationRoutes = require('./routes/applicationRoutes')
 const path = require('path')
 
 const app = express()
@@ -23,9 +24,10 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' })
 })
 
-app.use('/api/auth', authRoutes)
+app.use('/api/auth', authRoutes);
 app.use('/api/profile', require('./routes/profileRoutes'));
-app.use('/api/jobs', jobRoutes)
+app.use('/api/jobs', jobRoutes);
+app.use('/api/applications', applicationRoutes);
 
 // Only listen on port if NOT in test environment
 if (process.env.NODE_ENV !== 'test') {
