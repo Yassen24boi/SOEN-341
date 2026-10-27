@@ -168,7 +168,16 @@ router.post('/:id/apply', requireAuth, upload.single('coverLetterFile'), async (
       resumeFilename: resumeFilename || null,
       coverLetterFilename: coverLetterFilename
     })
-    res.status(201).json(app)
+
+    const populatedApp = await Application.findById(app._id).populate('job', 'title')
+
+    res.status(201).json({
+      _id:populatedApp._id,
+      jobTitle:populatedApp.job.title,
+      createdAt: populatedApp.createdAt,
+      status: populatedApp.status,
+      resumeFilename: populatedApp.resumeFilename,
+    })
   } catch (err) {
     if (err.code === 11000) return res.status(409).json({ message: 'Already applied' })
     res.status(500).json({ message: 'Could not apply' })

@@ -364,8 +364,7 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
       });
     });
 
-    it('AT-12.1: should render CV picker with default CV pre-selected and submit successfully', async () => {
-      // 1. Mock initial job details fetch on mount
+      it('AT-12.1: should render CV picker with default CV pre-selected and show inline confirmation on successful submit', async () => {
       fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -380,16 +379,15 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
       render(
         <MemoryRouter initialEntries={['/jobs/job123']}>
           <Routes>
-            <Route path="/jobs/:id" element={<JobDetails />}/>
+            <Route path="/jobs/:id" element={<JobDetails />} />
+            <Route path="/applications" element={<div>My Applications Page</div>} />
           </Routes>
         </MemoryRouter>
       );
 
-      // Wait for job details to load
       const applyButton = await screen.findByRole('button', { name: /Apply Now/i });
       expect(applyButton).toBeInTheDocument();
 
-      // 2. Mock profile fetch returning multiple CVs when clicking Apply
       fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -402,32 +400,137 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
 
       fireEvent.click(applyButton);
 
-      // Wait for CV picker modal to appear and verify default selection
+      await waitFor(() => {
+        expect(screen.getByText('Select CV for Application')).toBeInTheDocument();
+        const select = screen.getByRole('combobox');
+        expect(select.value).toBe('default.pdf');
+      });
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          _id: 'app123',
+          jobTitle: 'Software Engineer',
+          createdAt: new Date().toISOString()
+        }),
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Confirm Application/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/Application submitted/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Software Engineer/i).length).toBeGreaterThanOrEqual(1);
+        expect(screen.getByRole('link', { name: /View My Applications →/i })).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Sprint 2: US-13 - Application Confirmation and Error Handling (JobDetails.jsx)', () => {
+    beforeEach(() => {
+      localStorage.setItem('token', 'mock_token');
+    });
+
+      it('AT-13.1: should return and display created application details with job title and date on success', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          _id: 'job123',
+          title: 'Frontend Developer',
+          company: 'Web Corp',
+          description: 'React stuff',
+          alreadyApplied: false
+        }),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/jobs/job123']}>
+          <Routes>
+            <Route path="/jobs/:id" element={<JobDetails />} />
+            <Route path="/applications" element={<div>Applications</div>} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      const applyButton = await screen.findByRole('button', { name: /Apply Now/i });
+      expect(applyButton).toBeInTheDocument();   
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          resumes: [{ _id: 'cv1', filename: 'resume.pdf', label: 'My CV', isDefault: true }]
+        }),
+      });
+      
+      fireEvent.click(applyButton);
+
       await waitFor(() => {
         expect(screen.getByText('Select CV for Application')).toBeInTheDocument();
       });
 
-      const select = screen.getByRole('combobox');
-      expect(select.value).toBe('default.pdf');
-
-      // 3. Mock application POST submission response
       fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ message: 'Application submitted successfully!' }),
+        json: async () => ({
+          _id: 'app999',
+          jobTitle: 'Frontend Developer',
+          createdAt: '2026-06-01T00:00:00.000Z'
+        }),
       });
 
-      const confirmButton = screen.getByRole('button', { name: /Confirm Application/i });
-      fireEvent.click(confirmButton);
+      fireEvent.click(screen.getByRole('button', { name: /Confirm Application/i }));
 
-      // Verify API call and success alert
       await waitFor(() => {
-        expect(fetch).toHaveBeenCalledWith(
-          'http://localhost:5000/api/jobs/job123/apply',
-          expect.objectContaining({
-            method: 'POST',
-          })
-        );
-        expect(global.alert).toHaveBeenCalledWith('Application submitted successfully!');
+        expect(screen.getByText('Application submitted')).toBeInTheDocument();
+        expect(screen.getAllByText('Frontend Developer').length).toBeGreaterThanOrEqual(1);
+      });
+    });
+
+    it('AT-13.2: should show an error message, hide confirmation, and keep form data intact when submission fails', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          _id: 'job123',
+          title: 'Software Engineer',
+          company: 'Tech Inc',
+          description: 'Build things',
+          alreadyApplied: false
+        }),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/jobs/job123']}>
+          <Routes>
+            <Route path="/jobs/:id" element={<JobDetails />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      const applyButton = await screen.findByRole('button', { name: /Apply Now/i });
+      expect(applyButton).toBeInTheDocument();   
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          resumes: [{ _id: 'cv1', filename: 'default.pdf', label: 'Default CV', isDefault: true }]
+        }),
+      });
+
+      fireEvent.click(applyButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Select CV for Application')).toBeInTheDocument();
+      });
+
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: 'Failed to submit application' }),
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Confirm Application/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Failed to submit application')).toBeInTheDocument();
+        expect(screen.queryByText(/Application submitted/i)).not.toBeInTheDocument();
+        expect(screen.getByText('Select CV for Application')).toBeInTheDocument();
       });
     });
   });

@@ -16,7 +16,7 @@ function daysFromNow(days) {
     return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 }
 
-describe('CareerConnect Job Application Tests (Sprint 2: US-12)', () => {
+describe('CareerConnect Job Application Tests', () => {
     let recruiter;
     let jobSeeker;
     let seekerToken;
@@ -133,6 +133,28 @@ describe('CareerConnect Job Application Tests (Sprint 2: US-12)', () => {
 
             expect(res.statusCode).toEqual(404);
             expect(res.body.message).toEqual('Job not available');
+        });
+
+        it('AT-13.1: should return the created application with ID, job title, and date from apply endpoint', async () => {
+            const uniqueJob = await Job.create({
+                recruiter: recruiter._id,
+                company: 'Test Company',
+                title: 'Confirmation Test Job',
+                localtion: APP_CITY,
+                description: 'Job for AT-13.1 test.',
+                status: 'open'
+            });
+            
+            
+            const res = await request(app)
+                .post(`/api/jobs/${uniqueJob._id}/apply`)
+                .set('Authorization', `Bearer ${seekerToken}`)
+                .send({ resumeFilename: 'resume1.pdf' });
+
+            expect(res.statusCode).toEqual(201);
+            expect(res.body).toHaveProperty('_id');
+            expect(res.body).toHaveProperty('jobTitle', 'Confirmation Test Job');
+            expect(res.body).toHaveProperty('createdAt');
         });
     });
 });
