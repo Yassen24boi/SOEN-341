@@ -20,6 +20,9 @@ function JobDetails(){
     const [profileMissingCv, setProfileMissingCv] = useState(false)
     const [coverLetterFile, setCoverLetterFile] = useState(null)
 
+    const [submissionResult, setSubmissionResult] = useState(null)
+    const [formError, setFormError] = useState('')
+
     useEffect(() => {
         async function loadJobDetails() {
             try{
@@ -102,12 +105,12 @@ function JobDetails(){
             })
             const data = await res.json()
             if (!res.ok) {
-                alert(data.message || 'Failed to submit application')
+                setFormError(data.message || 'Failed to submit application')
                 return
             }
             setApplied(true)
             setShowCvPicker(false)
-            alert('Application submitted successfully!')
+            setSubmissionResult(data)
         } catch(err) {
             console.error(err)
             alert('Could not connect to the server')
@@ -155,9 +158,28 @@ function JobDetails(){
                 </button>
             </div>
 
+            {submissionResult && (
+                <div style={{ marginTop: 20, padding: 16, border: '1px solid #28a745', borderRadius: 6, background: '#1e1e1e' }}>
+                    <h3 style={{ color: '#28a745' }}>Application submitted</h3>
+                    <p><strong>Job Title:</strong> {submissionResult.jobTitle}</p>
+                    <p><strong>Date:</strong> {new Date(submissionResult.createdAt).toLocaleDateString()}</p>
+                    <div style={{ marginTop: 12 }}>
+                        <Link to="/applications" style={{ color: '#4dabf7', textDecoration: 'underline' }}>
+                            View My Applications →
+                        </Link>
+                    </div>
+                </div>
+            )}
+
             {showCvPicker && (
                 <div style={{ marginTop: 20, padding: 16, border: '1px solid #555', borderRadius: 6, background: '#1e1e1e' }}>
                     <h3>Select CV for Application</h3>
+
+                    {formError && (
+                        <div style={{ color: '#ffb3b3', marginBottom: 12, padding: 8, background: '#441111', borderRadius: 4 }}>
+                            {formError}
+                        </div>
+                    )}
 
                     {profileMissingCv ? (
                         <div>
@@ -207,8 +229,6 @@ function JobDetails(){
                     )}
                 </div>
             )}
-
-            {applied && <Link to='/applications' style={{width: '800px', textAlign: 'center'}}>My Applications →</Link>}
         </div>
     )
 }
