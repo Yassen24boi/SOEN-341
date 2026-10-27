@@ -13,7 +13,11 @@ router.post('/register', async (req, res) => {
     if (!fullName || !email || !password) {
       return res.status(400).json({ message: 'Name, email and password are required' })
     }
-    
+
+    if (password.length < 8 || !/\d/.test(password)) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters and contain a number' })
+    }
+
     const existingUser = await User.findOne({ email })
     if (existingUser) {
       return res.status(400).json({ message: 'Email already in use' })

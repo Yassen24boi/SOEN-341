@@ -73,6 +73,19 @@ describe('CareerConnect Authentication Tests (Sprint 1: US-01, US-02)', () => {
             expect(res.statusCode).toEqual(400);
             expect(await User.countDocuments({ email: email('nopass') })).toBe(0);
         });
+
+        it('should reject a weak password: too short or without a number (AT-01.4)', async () => {
+            const short = await request(app).post('/api/auth/register').send({
+                fullName: 'Weak One', email: email('weak1'), password: 'abc123'
+            });
+            const noNumber = await request(app).post('/api/auth/register').send({
+                fullName: 'Weak Two', email: email('weak2'), password: 'passwordonly'
+            });
+
+            expect(short.statusCode).toEqual(400);
+            expect(noNumber.statusCode).toEqual(400);
+            expect(await User.countDocuments({ email: { $in: [email('weak1'), email('weak2')] } })).toBe(0);
+        });
     });
 
     describe('POST /api/auth/login - Login (US-02)', () => {
