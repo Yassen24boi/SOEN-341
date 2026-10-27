@@ -4,6 +4,15 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 const API = 'http://localhost:5000/api/jobs'
 const PROFILEAPI = 'http://localhost:5000/api/profile'
 
+// US-11: shows a salary range
+function formatSalary(min, max) {
+    const money = (amount) => `$${amount.toLocaleString()}`
+    if (min && max) return `${money(min)} - ${money(max)}`
+    if (min) return `From ${money(min)}`
+    if (max) return `Up to ${money(max)}`
+    return 'Not specified'
+}
+
 function JobDetails(){
     const {id} = useParams()
     const navigate = useNavigate()
@@ -132,10 +141,29 @@ function JobDetails(){
                 </span>
             </div>
 
+            
+            {/* US-11: category, salary and deadline */}
+            <div style={{ display: 'grid', gap: 4, margin: '12px 0' }}>
+                <div><strong>Category:</strong> {job.category}</div>
+                <div><strong>Salary:</strong> {formatSalary(job.salaryMin, job.salaryMax)}</div>
+                <div><strong>Apply before:</strong> {job.deadline ? new Date(job.deadline).toLocaleDateString() : 'No deadline'}</div>
+            </div>
+
+
             <hr style={{ borderColor: '#444', margin: '20px 0' }}></hr>
 
-            <h3>Job Description</h3>
+                        <h3>Job Description</h3>
             <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{job.description}</p>
+
+            {/* US-11: requirements */}
+            {job.requirements && (
+                <>
+                    <h3>Requirements</h3>
+                    <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{job.requirements}</p>
+                </>
+            )}
+
+
 
             <div style={{ marginTop: 24 }}>
                 <button 
@@ -151,7 +179,7 @@ function JobDetails(){
                     borderRadius: '4px'
                 }}
                 >
-                {applied ? 'Applied' : 'Apply Now'}
+                {applied ? 'Already applied' : 'Apply Now'}
                 </button>
             </div>
 
