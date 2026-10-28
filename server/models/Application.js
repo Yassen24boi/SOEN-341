@@ -6,7 +6,7 @@ const applicationSchema = new mongoose.Schema(
     applicant: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     resumeFilename: {type: String, default: null},
     coverLetterFilename: {type: String, default: null},
-    status: { type: String, default: 'submitted' }
+    status: { type: String, default: 'Applied' }
   },
   { timestamps: true }
 )

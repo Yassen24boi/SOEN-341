@@ -85,6 +85,29 @@ function RecruiterDashboard() {
     setApplicationsFor(job._id)
   }
 
+  async function updateApplicationStatus(appId, newStatus){
+    try{
+      const res = await fetch(`http://localhost:5000/api/applications/${appId}/status`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({status: newStatus})
+      })
+      const data = await res.json()
+      if(!res.ok){
+        alert(data.message || 'Failed to update application status')
+        return
+      }
+
+      setApplications((prev) =>
+        prev.map((app) => (app._id === appId ? { ...app, status: newStatus } : app))
+      )
+
+    } catch (err) {
+      console.error(err)
+      alert('Error updating status')
+    }
+  }
+
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 20, textAlign: 'left' }}>
       <h1>Recruiter Dashboard</h1>
@@ -137,6 +160,21 @@ function RecruiterDashboard() {
                   <div>Email: {a.applicant?.email}</div>
                   {a.applicant?.headline && <div>Headline: {a.applicant.headline}</div>}
                   <div>Applied on: {new Date(a.createdAt).toLocaleDateString()}</div>
+
+                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span><strong>Status:</strong></span>
+                    <select
+                      value={a.status || 'Pending'}
+                      onChange={(e) => updateApplicationStatus(a._id, e.target.value)}
+                      style={{padding: '2px 6px'}}
+                    >
+                      <option value="Applied">Pending</option>
+                      <option value="Under Review">Reviewed</option>
+                      <option value="Interview">Interview</option>
+                      <option value="Offered">Offered</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
+                  </div>
 
                   {a.resumeFilename ? (
                     <div style={{marginTop: 6}}>
