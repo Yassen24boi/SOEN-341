@@ -168,8 +168,8 @@ function RecruiterDashboard() {
                       onChange={(e) => updateApplicationStatus(a._id, e.target.value)}
                       style={{padding: '2px 6px'}}
                     >
-                      <option value="Applied">Pending</option>
-                      <option value="Under Review">Reviewed</option>
+                      <option value="Applied">Applied</option>
+                      <option value="Under Review">Under Review</option>
                       <option value="Interview">Interview</option>
                       <option value="Offered">Offered</option>
                       <option value="Rejected">Rejected</option>

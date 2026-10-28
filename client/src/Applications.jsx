@@ -78,6 +78,73 @@ function Applications() {
       }
     }
 
+    function renderTimeline(currentStatus) {
+        const steps = ['Applied', 'Under Review', 'Interview', 'Offered'];
+        
+        // Handle terminal states explicitly
+        if (currentStatus === 'Rejected' || currentStatus === 'Withdrawn') {
+            return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontSize: '13px', color: '#aaa' }}>
+                    <span style={{ 
+                        display: 'inline-block', 
+                        padding: '2px 8px', 
+                        borderRadius: 4, 
+                        fontWeight: '500',
+                        ...getStatusStyle(currentStatus) 
+                    }}>
+                        {currentStatus}
+                    </span>
+                    <span>— This application is closed.</span>
+                </div>
+            );
+        }
+
+        const currentIndex = steps.indexOf(currentStatus);
+
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: 16, marginBottom: 8, overflowX: 'auto', paddingBottom: 4 }}>
+                {steps.map((step, index) => {
+                    const isCompleted = index <= currentIndex;
+                    const isCurrent = index === currentIndex;
+
+                    return (
+                        <div key={step} style={{ display: 'flex', alignItems: 'center', flex: index < steps.length - 1 ? 1 : 'none' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 70 }}>
+                                <div style={{
+                                    width: 24,
+                                    height: 24,
+                                    borderRadius: '50%',
+                                    backgroundColor: isCompleted ? '#4dabf7' : '#333',
+                                    color: isCompleted ? '#121212' : '#888',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '12px',
+                                    fontWeight: 'bold',
+                                    border: isCurrent ? '2px solid #fff' : 'none'
+                                }}>
+                                    {index + 1}
+                                </div>
+                                <span style={{ fontSize: '11px', marginTop: 4, color: isCurrent ? '#fff' : '#888', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                    {step}
+                                </span>
+                            </div>
+                            {index < steps.length - 1 && (
+                                <div style={{
+                                    height: 2,
+                                    flex: 1,
+                                    backgroundColor: index < currentIndex ? '#4dabf7' : '#333',
+                                    margin: '0 4px',
+                                    marginBottom: 16
+                                }} />
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    }
+
     const displayedApplications = filteredStatus === 'All'
       ? applications
       : applications.filter(app => (app.status || 'Applied') === filteredStatus);
@@ -124,6 +191,9 @@ function Applications() {
               <h4 style={{ color: '#aaa', marginTop: -8 }}>{app.job ? app.job.company : 'Unknown Company'} {app.job?.location && `• ${app.job.location}`}</h4>
               <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: '14px' }}>
                 <p><strong>Status:</strong> <span style={{ color: statusStyle.color, background: '#333', padding: '2px 6px', borderRadius: 4 }}>{currentStatus}</span></p>
+                
+                {renderTimeline(currentStatus)}
+
                 <p><strong>Applied On:</strong> {new Date(app.createdAt).toLocaleDateString()}</p>
               </div>
               {canWithdraw && (
