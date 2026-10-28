@@ -56,4 +56,26 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
   }
 });
 
+router.patch('/:id/withdraw', requireAuth, async (req, res) => {
+  try{
+    const application = await Application.findById(req.params.id);
+    if (!application) {
+      return res.status(404).json({message: 'Application not found.'});
+    }
+
+    if(application.applicant.toString() !== req.userId) {
+      return res.status(403).json({message: 'Unauthorized to withdraw this application.'})
+    }
+
+    application.status = 'Withdrawn';
+    await application.save();
+
+    res.json({message: 'Application withdrawn successfully'}, application)
+  }
+  catch (err){
+    console.error(err);
+    res.status(500).json({message: 'Server error while withdrawing application'})
+  }
+})
+
 module.exports = router;

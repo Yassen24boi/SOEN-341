@@ -38,6 +38,28 @@ function Applications() {
         fetchApplications();
     }, [token, navigate]);
 
+    async function withdrawApplication(appId) {
+      if(!window.confirm('Are you sure you want to withdraw this application?')) return;
+      try{
+        const res = await fetch(`${API}/${appId}/withdraw`, {
+          method: 'PATCH',
+          headers: {Authorization: `Bearer ${token}`}
+        });
+        const data = await res.json();
+        if(!res.ok){
+          alert(data.message || 'Failed to withdraw application');
+          return;
+        }
+
+        setApplications(prev =>
+          prev.map(app => (app._id === appId ? {...app, status: 'Withdrawn'} : app))
+        );
+      } catch(err){
+        console.error(err)
+
+      }
+    }
+
     function getStatusStyle(status) {
       switch (status) {
         case 'Interview':
@@ -94,6 +116,7 @@ function Applications() {
             
             const currentStatus = app.status || 'Applied';
             const statusStyle = getStatusStyle(currentStatus);
+            const canWithdraw = currentStatus !== 'Withdrawn' && currentStatus !== 'Rejected'; 
 
             return (
             <div key={app._id} style={{ padding: 16, border: '1px solid #555', borderRadius: 6, background: '#1e1e1e' }}>
@@ -103,6 +126,14 @@ function Applications() {
                 <p><strong>Status:</strong> <span style={{ color: statusStyle.color, background: '#333', padding: '2px 6px', borderRadius: 4 }}>{currentStatus}</span></p>
                 <p><strong>Applied On:</strong> {new Date(app.createdAt).toLocaleDateString()}</p>
               </div>
+              {canWithdraw && (
+                <button
+                  onClick={() => withdrawApplication(app._id)}
+                  style={{background: '#3a1f1f', color: '#e57373', border: '1px solid #e57373', padding: '4px 10px', borderRadius: 4, cursor: 'pointer'}}
+                >
+                  Withdraw
+                </button>
+              )}
               <p style={{ marginTop: 8, fontSize: '14px', color: '#ccc' }}><strong>CV Used:</strong> {app.resumeFilename || 'Default CV'}</p>
               {app.coverLetterFilename && <p style={{ fontSize: '14px', color: '#ccc' }}><strong>Cover Letter:</strong> Attached</p>}
             </div>
