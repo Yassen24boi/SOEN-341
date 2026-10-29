@@ -40,9 +40,15 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
       return res.status(404).json({ message: 'Associated job posting not found.' });
     }
 
-    // Assuming your Job model stores the creator's ID as `recruiter` or `postedBy`
-    if (job.recruiter.toString() !== req.userId) {
+    const isRecruiter = job.recruiter.toString() === req.userId;
+    const isApplicant = application.applicant.toString() === req.userId;
+
+    if (!isRecruiter && !isApplicant) {
       return res.status(403).json({ message: 'Unauthorized to update this application.' });
+    }
+
+    if (isApplicant && !isRecruiter && status !== 'Withdrawn'){
+      return res.status(403).json({message: 'Applicants can only update their application status to Withdrawn.'});
     }
 
     // 4. Update and save the status
@@ -70,7 +76,7 @@ router.patch('/:id/withdraw', requireAuth, async (req, res) => {
     application.status = 'Withdrawn';
     await application.save();
 
-    res.json({message: 'Application withdrawn successfully'}, application)
+    res.json({message: 'Application withdrawn successfully', application})
   }
   catch (err){
     console.error(err);
