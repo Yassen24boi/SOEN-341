@@ -9,6 +9,7 @@ import Login from '../Login';
 import Profile from '../Profile';
 import EditProfile from '../EditProfile';
 import JobDetails from '../JobDetails';
+import Applications from '../Applications';
 
 // Mock the window.alert and fetch API globally
 global.alert = jest.fn();
@@ -531,6 +532,166 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
         expect(screen.getByText('Failed to submit application')).toBeInTheDocument();
         expect(screen.queryByText(/Application submitted/i)).not.toBeInTheDocument();
         expect(screen.getByText('Select CV for Application')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Sprint 2: US-14 - My Applications & Status Tracking (Applications.jsx)', () => {
+    beforeEach(() => {
+      localStorage.setItem('token', 'mock_token');
+    });
+
+    it('AT-14.1 & Task 14.2: should render all rows with job title, company, applied date, and status when applications are fetched', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ([
+          {
+            _id: 'app1',
+            job: { title: 'Software Engineer', company: 'Tech Inc', location: 'Montreal, QC' },
+            status: 'Applied',
+            createdAt: '2026-06-01T00:00:00.000Z',
+            resumeFilename: 'resume1.pdf'
+          },
+          {
+            _id: 'app2',
+            job: { title: 'Backend Developer', company: 'Data Corp', location: 'Remote' },
+            status: 'Under Review',
+            createdAt: '2026-06-02T00:00:00.000Z',
+            resumeFilename: 'resume2.pdf'
+          },
+          {
+            _id: 'app3',
+            job: { title: 'Fullstack Dev', company: 'Web Solutions', location: 'Toronto, ON' },
+            status: 'Interview',
+            createdAt: '2026-06-03T00:00:00.000Z',
+            resumeFilename: 'resume3.pdf'
+          }
+        ]),
+      });
+
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Software Engineer')).toBeInTheDocument();
+        expect(screen.getByText(/Tech Inc/i)).toBeInTheDocument();
+        expect(screen.getByText('Backend Developer')).toBeInTheDocument();
+        expect(screen.getByText('Fullstack Dev')).toBeInTheDocument();
+        expect(screen.getAllByText('Interview').length).toBeGreaterThan(0);
+      });
+    });
+
+    it('AT-14.3: should filter applications correctly when a specific status filter is selected', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ([
+          {
+            _id: 'app1',
+            job: { title: 'Software Engineer', company: 'Tech Inc' },
+            status: 'Applied',
+            createdAt: '2026-06-01T00:00:00.000Z'
+          },
+          {
+            _id: 'app2',
+            job: { title: 'Data Scientist', company: 'AI Corp' },
+            status: 'Rejected',
+            createdAt: '2026-06-02T00:00:00.000Z'
+          }
+        ]),
+      });
+
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Software Engineer')).toBeInTheDocument();
+        expect(screen.getByText('Data Scientist')).toBeInTheDocument();
+      });
+
+      // Change filter to "Rejected"
+      const filterSelect = screen.getByLabelText(/Filter by Status:/i);
+      fireEvent.change(filterSelect, { target: { value: 'Rejected' } });
+
+      await waitFor(() => {
+        expect(screen.queryByText('Software Engineer')).not.toBeInTheDocument();
+        expect(screen.getByText('Data Scientist')).toBeInTheDocument();
+        expect(screen.getAllByText('Rejected').length).toBeGreaterThan(0);
+      });
+    });
+
+    it('Task 14.4: should display the visual status timeline for active applications', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ([
+          {
+            _id: 'app1',
+            job: { title: 'Frontend Developer', company: 'UI Co' },
+            status: 'Under Review',
+            createdAt: '2026-06-01T00:00:00.000Z'
+          }
+        ]),
+      });
+
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Frontend Developer')).toBeInTheDocument();
+        expect(screen.getAllByText('Applied').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Under Review').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Interview').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Offered').length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should successfully trigger a PATCH request to withdraw an application when the Withdraw button is clicked and confirmed', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ([
+          {
+            _id: 'app123',
+            job: { title: 'Cloud Engineer', company: 'Cloud Inc' },
+            status: 'Applied',
+            createdAt: '2026-06-01T00:00:00.000Z'
+          }
+        ]),
+      });
+
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Cloud Engineer')).toBeInTheDocument();
+      });
+
+      // Mock window.confirm to return true and mock PATCH response
+      global.confirm = jest.fn(() => true);
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ message: 'Application withdrawn successfully' })
+      });
+
+      const withdrawButton = screen.getByRole('button', { name: /Withdraw/i });
+      fireEvent.click(withdrawButton);
+
+      await waitFor(() => {
+        expect(global.confirm).toHaveBeenCalledWith('Are you sure you want to withdraw this application?');
+        expect(fetch).toHaveBeenCalledWith('http://localhost:5000/api/applications/app123/withdraw', expect.objectContaining({
+          method: 'PATCH',
+          headers: expect.objectContaining({ Authorization: 'Bearer mock_token' })
+        }));
       });
     });
   });
