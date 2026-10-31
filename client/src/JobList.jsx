@@ -3,13 +3,18 @@ import { Link, useSearchParams } from 'react-router-dom'
 
 const API = 'http://localhost:5000/api/jobs'
 
-// App.css makes every button full width, so the buttons on this page undo that
-const buttonStyle = { width: 'auto', padding: '6px 14px' }
-const fieldStyle = { padding: '8px 12px', fontSize: 14, border: '1px solid #ccc', borderRadius: 4 }
-
 // "full-time" -> "Full-time"
 function formatType(type) {
   return type ? type.charAt(0).toUpperCase() + type.slice(1) : ''
+}
+
+// Shows pay, e.g. "$60,000 - $80,000/year" or "$25 - $32/hour"
+function salaryText(job) {
+  const money = (n) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+  const unit = job.salaryPeriod === 'hourly' ? '/hour' : '/year'
+  if (job.salaryMin && job.salaryMax) return `${money(job.salaryMin)} - ${money(job.salaryMax)}${unit}`
+  if (job.salaryMin) return `From ${money(job.salaryMin)}${unit}`
+  return `Up to ${money(job.salaryMax)}${unit}`
 }
 
 function JobList() {
@@ -97,91 +102,81 @@ function JobList() {
     return () => clearTimeout(timer)
   }, [searchText, searchParams, setSearchParams])
 
-  function clearSearch() {
-    setSearchText('')
-    updateParams({ q: '' })
-  }
-
   function resetFilters() {
     setSearchText('')
     setSearchParams({})
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: 20, textAlign: 'left' }}>
+    <div className="page">
+      <span className="eyebrow">Browse openings</span>
       <h1>Find a job</h1>
 
-      {/* Search bar (US-09) */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+      {/* Search bar (US-09) and filter panel (US-10) */}
+      <div className="card toolbar">
         <input
           type="text"
           aria-label="Search jobs"
           placeholder="Search by title, company or keyword"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          style={{ ...fieldStyle, flex: 1 }}
         />
-        <button type="button" onClick={clearSearch} disabled={!searchText} style={buttonStyle}>
-          Clear
-        </button>
-      </div>
-
-      {/* Filter panel (US-10) */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-        <select aria-label="Location" value={location} onChange={(e) => updateParams({ location: e.target.value })} style={fieldStyle}>
+        <select aria-label="Location" value={location} onChange={(e) => updateParams({ location: e.target.value })}>
           <option value="">All locations</option>
           {filterOptions.locations.map((loc) => (
             <option key={loc} value={loc}>{loc}</option>
           ))}
         </select>
-        <select aria-label="Category" value={category} onChange={(e) => updateParams({ category: e.target.value })} style={fieldStyle}>
+        <select aria-label="Category" value={category} onChange={(e) => updateParams({ category: e.target.value })}>
           <option value="">All categories</option>
           {filterOptions.categories.map((cat) => (
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
-        <select aria-label="Job type" value={type} onChange={(e) => updateParams({ type: e.target.value })} style={fieldStyle}>
+        <select aria-label="Job type" value={type} onChange={(e) => updateParams({ type: e.target.value })}>
           <option value="">All job types</option>
           {filterOptions.types.map((t) => (
             <option key={t} value={t}>{formatType(t)}</option>
           ))}
         </select>
-        <button type="button" onClick={resetFilters} disabled={!hasSearchOrFilters} style={buttonStyle}>
-          Reset filters
+        <button type="button" onClick={resetFilters} disabled={!hasSearchOrFilters}>
+          Reset
         </button>
       </div>
 
-      {loading && <p>Loading jobs...</p>}
-      {error && <p style={{ color: 'crimson' }}>{error}</p>}
+      {loading && <p className="muted">Loading jobs...</p>}
+      {error && <p className="error">{error}</p>}
 
       {/* Empty states (AT-08.3, AT-09.2) */}
       {!loading && !error && result.jobs.length === 0 && (
-        <p>{hasSearchOrFilters ? 'No jobs match your search.' : 'No jobs available right now.'}</p>
+        <div className="card" style={{ padding: 28, textAlign: 'center' }}>
+          <p className="muted">{hasSearchOrFilters ? 'No jobs match your search. Try a different keyword or reset the filters.' : 'No jobs available right now.'}</p>
+        </div>
       )}
 
       {!loading && result.total > 0 && (
-        <p style={{ fontSize: 14 }}>{result.total} job{result.total === 1 ? '' : 's'} found</p>
+        <p className="muted" style={{ fontSize: 14, margin: '4px 0 12px' }}>{result.total} job{result.total === 1 ? '' : 's'} found</p>
       )}
 
       {/* Job cards (Task 8.4). Clicking a card opens the job details page (US-11). */}
       {result.jobs.map((job) => (
-        <Link
-          key={job._id}
-          to={`/jobs/${job._id}`}
-          style={{ display: 'block', border: '1px solid #888', borderRadius: 6, padding: 12, marginBottom: 10, color: 'inherit', textDecoration: 'none' }}
-        >
-          <strong style={{ fontSize: 18 }}>{job.title}</strong>
-          <div>{job.company}{job.location && ` · ${job.location}`}</div>
-          <div style={{ fontSize: 14 }}>
-            {formatType(job.type)} · {job.category} · Posted {new Date(job.createdAt).toLocaleDateString()}
+        <Link key={job._id} to={`/jobs/${job._id}`} className="card job-card">
+          <div>
+            <h3>{job.title}</h3>
+            <div className="job-co">{job.company}{job.location && ` · ${job.location}`}</div>
+          </div>
+          <div className="job-meta">
+            <span className="pill good">{formatType(job.type)}</span>
+            {job.category && <span className="tag">{job.category}</span>}
+            <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
           </div>
         </Link>
       ))}
 
       {/* Pagination (AT-08.1) */}
       {result.totalPages > 1 && (
-        <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 16 }}>
-          <button type="button" style={buttonStyle} disabled={result.page <= 1} onClick={() => updateParams({ page: result.page - 1 })}>
+        <div className="pager">
+          <button type="button" disabled={result.page <= 1} onClick={() => updateParams({ page: result.page - 1 })}>
             Previous
           </button>
           {Array.from({ length: result.totalPages }, (_, i) => i + 1).map((pageNumber) => (
@@ -189,13 +184,12 @@ function JobList() {
               key={pageNumber}
               type="button"
               aria-current={pageNumber === result.page ? 'page' : undefined}
-              style={{ ...buttonStyle, fontWeight: pageNumber === result.page ? 'bold' : 'normal' }}
               onClick={() => updateParams({ page: pageNumber })}
             >
               {pageNumber}
             </button>
           ))}
-          <button type="button" style={buttonStyle} disabled={result.page >= result.totalPages} onClick={() => updateParams({ page: result.page + 1 })}>
+          <button type="button" disabled={result.page >= result.totalPages} onClick={() => updateParams({ page: result.page + 1 })}>
             Next
           </button>
         </div>

@@ -4,17 +4,18 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 const API = 'http://localhost:5000/api/jobs'
 const PROFILEAPI = 'http://localhost:5000/api/profile'
 
-// US-11: shows a salary range
-function formatSalary(min, max) {
-    const money = (amount) => `$${amount.toLocaleString()}`
-    if (min && max) return `${money(min)} - ${money(max)}`
-    if (min) return `From ${money(min)}`
-    if (max) return `Up to ${money(max)}`
+// US-11: shows a salary range, per year or per hour
+function formatSalary(min, max, period) {
+    const money = (amount) => `$${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+    const unit = period === 'hourly' ? '/hour' : '/year'
+    if (min && max) return `${money(min)} - ${money(max)}${unit}`
+    if (min) return `From ${money(min)}${unit}`
+    if (max) return `Up to ${money(max)}${unit}`
     return 'Not specified'
 }
 
-function JobDetails(){
-    const {id} = useParams()
+function JobDetails() {
+    const { id } = useParams()
     const navigate = useNavigate()
     const token = localStorage.getItem('token')
 
@@ -34,12 +35,12 @@ function JobDetails(){
 
     useEffect(() => {
         async function loadJobDetails() {
-            try{
-                const headers = token ? {Authorization: `Bearer ${token}`} : {}
-                const res = await fetch(`${API}/${id}`, {headers})
+            try {
+                const headers = token ? { Authorization: `Bearer ${token}` } : {}
+                const res = await fetch(`${API}/${id}`, { headers })
                 const data = await res.json()
 
-                if (!res.ok){
+                if (!res.ok) {
                     setMessage(data.message || 'Job posting not found')
                     return
                 }
@@ -57,7 +58,7 @@ function JobDetails(){
     }, [id, token])
 
     async function handleApplyClick() {
-        if(!token) {
+        if (!token) {
             alert('You must be logged in as a job seeker to apply.')
             navigate('/login')
             return
@@ -65,10 +66,10 @@ function JobDetails(){
 
         try {
             const res = await fetch(PROFILEAPI, {
-                headers: {Authorization: `Bearer ${token}`}
+                headers: { Authorization: `Bearer ${token}` }
             })
 
-            if (!res.ok){
+            if (!res.ok) {
                 setProfileMissingCv(true)
                 setShowCvPicker(true)
                 return
@@ -94,10 +95,10 @@ function JobDetails(){
         }
     }
 
-    async function handleConfirmApply(e){
-        
+    async function handleConfirmApply(e) {
+
         e.preventDefault()
-        try{
+        try {
             const formData = new FormData()
             formData.append('resumeFilename', selectedResumeFilename)
 
@@ -120,138 +121,116 @@ function JobDetails(){
             setApplied(true)
             setShowCvPicker(false)
             setSubmissionResult(data)
-        } catch(err) {
+        } catch (err) {
             console.error(err)
             alert('Could not connect to the server')
         }
     }
 
-    if (loading) return <p style={{ textAlign: 'center', padding: 20 }}>Loading job details...</p>
-    if (message) return <div style={{ maxWidth: 800, margin: '0 auto', padding: 20 }}><h2>{message}</h2><button onClick={() => navigate('/jobs')}>Back to jobs</button></div>
+    if (loading) return <div className="page"><p className="muted">Loading job details...</p></div>
+    if (message) return <div className="page narrow"><h2>{message}</h2><button onClick={() => navigate('/jobs')}>Back to jobs</button></div>
 
-    if(!job) return null
+    if (!job) return null
 
     return (
-        <div style={{ maxWidth: 800, margin: '0 auto', padding: 20, textAlign: 'left' }}>
-            <button onClick={() => navigate('/jobs')} style={{ marginBottom: 16 }}>Back to Job Board</button>
-
-            <h1>{job.title}</h1>
-            <h3 style={{ color: '#aaa', marginTop: -10 }}>{job.company} {job.location && `• ${job.location}`}</h3>
-
-            <div style={{ margin: '12px 0' }}>
-                <span style={{ background: '#333', padding: '4px 8px', borderRadius: 4 }}>
-                    Type: {job.type}
-                </span>
+        <div className="page narrow">
+            <div style={{ marginBottom: 20 }}>
+                <button className="btn small" onClick={() => navigate('/jobs')}>← Back to job board</button>
             </div>
 
-            
+            <span className="pill good">{job.type}</span>
+            <h1 style={{ marginTop: 10 }}>{job.title}</h1>
+            <p className="muted" style={{ fontSize: 18 }}>{job.company} {job.location && `· ${job.location}`}</p>
+
             {/* US-11: category, salary and deadline */}
-            <div style={{ display: 'grid', gap: 4, margin: '12px 0' }}>
-                <div><strong>Category:</strong> {job.category}</div>
-                <div><strong>Salary:</strong> {formatSalary(job.salaryMin, job.salaryMax)}</div>
-                <div><strong>Apply before:</strong> {job.deadline ? new Date(job.deadline).toLocaleDateString() : 'No deadline'}</div>
+            <div className="facts">
+                <div><small>Category</small><b>{job.category || 'Not specified'}</b></div>
+                <div><small>Salary</small><b>{formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod)}</b></div>
+                <div><small>Apply before</small><b>{job.deadline ? new Date(job.deadline).toLocaleDateString() : 'No deadline'}</b></div>
             </div>
 
-
-            <hr style={{ borderColor: '#444', margin: '20px 0' }}></hr>
-
-                        <h3>Job Description</h3>
-            <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{job.description}</p>
+            <h3>Job description</h3>
+            <p className="prose">{job.description}</p>
 
             {/* US-11: requirements */}
             {job.requirements && (
                 <>
                     <h3>Requirements</h3>
-                    <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{job.requirements}</p>
+                    <p className="prose">{job.requirements}</p>
                 </>
             )}
 
-
-
-            <div style={{ marginTop: 24 }}>
-                <button 
-                onClick={handleApplyClick} 
-                disabled={applied}
-                style={{
-                    padding: '10px 20px',
-                    fontSize: '16px',
-                    cursor: applied ? 'not-allowed' : 'pointer',
-                    backgroundColor: applied ? '#555' : '#aaa',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '4px'
-                }}
+            <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                <button
+                    className="btn primary"
+                    onClick={handleApplyClick}
+                    disabled={applied}
                 >
-                {applied ? 'Already applied' : 'Apply Now'}
+                    {applied ? '✓ Already applied' : 'Apply now'}
                 </button>
+                {applied && !submissionResult && (
+                    <Link to="/applications">Check your application status →</Link>
+                )}
             </div>
 
             {submissionResult && (
-                <div style={{ marginTop: 20, padding: 16, border: '1px solid #28a745', borderRadius: 6, background: '#1e1e1e' }}>
-                    <h3 style={{ color: '#28a745' }}>Application submitted</h3>
+                <div className="card panel success-card">
+                    <h3 style={{ marginTop: 0 }}>Application submitted</h3>
                     <p><strong>Job Title:</strong> {submissionResult.jobTitle}</p>
                     <p><strong>Date:</strong> {new Date(submissionResult.createdAt).toLocaleDateString()}</p>
-                    <div style={{ marginTop: 12 }}>
-                        <Link to="/applications" style={{ color: '#4dabf7', textDecoration: 'underline' }}>
-                            View My Applications →
-                        </Link>
-                    </div>
+                    <p style={{ marginTop: 12 }}>
+                        <Link to="/applications">View My Applications →</Link>
+                    </p>
                 </div>
             )}
 
             {showCvPicker && (
-                <div style={{ marginTop: 20, padding: 16, border: '1px solid #555', borderRadius: 6, background: '#1e1e1e' }}>
-                    <h3>Select CV for Application</h3>
+                <div className="card panel">
+                    <h3 style={{ marginTop: 0 }}>Select CV for Application</h3>
 
                     {formError && (
-                        <div style={{ color: '#ffb3b3', marginBottom: 12, padding: 8, background: '#441111', borderRadius: 4 }}>
-                            {formError}
-                        </div>
+                        <div className="alert-error" role="alert">{formError}</div>
                     )}
 
                     {profileMissingCv ? (
                         <div>
-                            <p style={{ color: '#ffb3b3' }}>You do not have a CV uploaded to your profile.</p>
-                            <Link to="/profile" style={{ color: '#4dabf7', textDecoration: 'underline' }}>
-                                Go to your profile to upload a CV →
-                            </Link>
+                            <p className="error">You do not have a CV uploaded to your profile.</p>
+                            <p style={{ marginTop: 8 }}>
+                                <Link to="/profile">Go to your profile to upload a CV →</Link>
+                            </p>
                             <div style={{ marginTop: 12 }}>
-                                <button onClick={() => setShowCvPicker(false)} style={{ padding: '6px 12px' }}>Cancel</button>
+                                <button className="btn small" onClick={() => setShowCvPicker(false)}>Cancel</button>
                             </div>
                         </div>
                     ) : (
-                        <form onSubmit={handleConfirmApply}>
-                            <div style={{ margin: '12px 0' }}>
-                                <label style={{ display: 'block', marginBottom: 6 }}>Choose CV:</label>
-                                <select 
-                                value={selectedResumeFilename} 
-                                onChange={(e) => setSelectedResumeFilename(e.target.value)}
-                                style={{ width: '100%', padding: '8px', background: '#333', color: '#fff', border: '1px solid #555', borderRadius: '4px' }}
+                        <form onSubmit={handleConfirmApply} style={{ display: 'grid', gap: 12 }}>
+                            <div className="field">
+                                <label htmlFor="cv-select">Choose CV</label>
+                                <select
+                                    id="cv-select"
+                                    value={selectedResumeFilename}
+                                    onChange={(e) => setSelectedResumeFilename(e.target.value)}
                                 >
-                                {userResumes.map((resume) => (
-                                    <option key={resume._id} value={resume.filename}>
-                                    {resume.label} {resume.isDefault ? '(Default)' : ''}
-                                    </option>
-                                ))}
+                                    {userResumes.map((resume) => (
+                                        <option key={resume._id} value={resume.filename}>
+                                            {resume.label} {resume.isDefault ? '(Default)' : ''}
+                                        </option>
+                                    ))}
                                 </select>
-                                <label style={{ display: 'block', marginBottom: 6, marginTop: 6 }}>Cover Letter File (Optional):</label>
+                            </div>
+                            <div className="field">
+                                <label htmlFor="cover-letter">Cover letter file (optional)</label>
                                 <input
+                                    id="cover-letter"
                                     type="file"
                                     accept=".pdf,.doc,.docx"
                                     onChange={(e) => setCoverLetterFile(e.target.files[0])}
-                                    style={{ width: '100%', padding: '0px', background: '#333', color: '#fff', border: '1px solid #555', borderRadius: '4px' }}
                                 />
                             </div>
 
-
-
                             <div style={{ display: 'flex', gap: 8 }}>
-                                <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                                Confirm Application
-                                </button>
-                                <button type="button" onClick={() => setShowCvPicker(false)} style={{ padding: '8px 16px', background: '#555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                                Cancel
-                                </button>
+                                <button type="submit" className="btn primary">Confirm application</button>
+                                <button type="button" className="btn" onClick={() => setShowCvPicker(false)}>Cancel</button>
                             </div>
                         </form>
                     )}

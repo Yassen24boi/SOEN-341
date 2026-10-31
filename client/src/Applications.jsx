@@ -60,88 +60,43 @@ function Applications() {
       }
     }
 
-    function getStatusStyle(status) {
+    // Which colour pill each status gets (see .pill in index.css)
+    function getStatusClass(status) {
       switch (status) {
-        case 'Interview':
-          return {color: '#81c784'};
-        case 'Offered':
-          return {color: '#a78bfa'};
-        case 'Rejected':
-          return {color: '#e57373'};
-        case 'Under Review':
-          return {color: '#4dabf7'};
-        case 'Withdrawn':
-          return {color: '#9ca3af'}
+        case 'Interview': return 'good'
+        case 'Offered': return 'info'
+        case 'Rejected': return 'bad'
+        case 'Under Review': return 'warn'
+        case 'Withdrawn': return 'plain'
         case 'Applied':
-        default:
-          return {color: '#ffd54f'}
+        default: return ''
       }
     }
 
     function renderTimeline(currentStatus) {
         const steps = ['Applied', 'Under Review', 'Interview', 'Offered'];
-        
+
         // Handle terminal states explicitly
         if (currentStatus === 'Rejected' || currentStatus === 'Withdrawn') {
             return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontSize: '13px', color: '#aaa' }}>
-                    <span style={{ 
-                        display: 'inline-block', 
-                        padding: '2px 8px', 
-                        borderRadius: 4, 
-                        fontWeight: '500',
-                        ...getStatusStyle(currentStatus) 
-                    }}>
-                        {currentStatus}
-                    </span>
-                    <span>— This application is closed.</span>
-                </div>
+                <p className="muted" style={{ fontSize: 14 }}>This application is closed.</p>
             );
         }
 
         const currentIndex = steps.indexOf(currentStatus);
 
         return (
-            <div style={{ display: 'flex', alignItems: 'center', marginTop: 16, marginBottom: 8, overflowX: 'auto', paddingBottom: 4 }}>
+            <ol className="timeline" aria-label="Application progress">
                 {steps.map((step, index) => {
-                    const isCompleted = index <= currentIndex;
-                    const isCurrent = index === currentIndex;
-
+                    const state = index < currentIndex ? 'done' : index === currentIndex ? 'now' : ''
                     return (
-                        <div key={step} style={{ display: 'flex', alignItems: 'center', flex: index < steps.length - 1 ? 1 : 'none' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 70 }}>
-                                <div style={{
-                                    width: 24,
-                                    height: 24,
-                                    borderRadius: '50%',
-                                    backgroundColor: isCompleted ? '#4dabf7' : '#333',
-                                    color: isCompleted ? '#121212' : '#888',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '12px',
-                                    fontWeight: 'bold',
-                                    border: isCurrent ? '2px solid #fff' : 'none'
-                                }}>
-                                    {index + 1}
-                                </div>
-                                <span style={{ fontSize: '11px', marginTop: 4, color: isCurrent ? '#fff' : '#888', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                    {step}
-                                </span>
-                            </div>
-                            {index < steps.length - 1 && (
-                                <div style={{
-                                    height: 2,
-                                    flex: 1,
-                                    backgroundColor: index < currentIndex ? '#4dabf7' : '#333',
-                                    margin: '0 4px',
-                                    marginBottom: 16
-                                }} />
-                            )}
-                        </div>
+                        <li key={step} className={`tl-step ${state}`}>
+                            <span className="tl-dot">{index + 1}</span>
+                            <span className="tl-label">{step}</span>
+                        </li>
                     );
                 })}
-            </div>
+            </ol>
         );
     }
 
@@ -149,69 +104,75 @@ function Applications() {
       ? applications
       : applications.filter(app => (app.status || 'Applied') === filteredStatus);
 
-    if (loading) return <p style={{ textAlign: 'center', padding: 20 }}>Loading your applications...</p>;
-    if (message) return <div style={{ maxWidth: 800, margin: '0 auto', padding: 20 }}><h2>{message}</h2></div>;
+    if (loading) return <div className="page"><p className="muted">Loading your applications...</p></div>;
+    if (message) return <div className="page narrow"><h2>{message}</h2></div>;
 
     return (
-        <div style={{ maxWidth: 800, margin: '0 auto', padding: 20, textAlign: 'left' }}>
-      <button onClick={() => navigate('/jobs')} style={{ marginBottom: 16 }}>Back to Job Board</button>
-      <h1>My Job Applications</h1>
-
-      <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <label htmlFor="status-filter"><strong>Filter by Status:</strong></label>
-                <select
-                    id="status-filter"
-                    value={filteredStatus}
-                    onChange={(e) => setFilteredStatus(e.target.value)}
-                    style={{ padding: '6px 12px', borderRadius: 4, background: '#2a2a2a', color: '#fff', border: '1px solid #555' }}
-                >
-                    <option value="All">All Statuses ({applications.length})</option>
-                    <option value="Applied">Applied</option>
-                    <option value="Under Review">Under Review</option>
-                    <option value="Interview">Interview</option>
-                    <option value="Offered">Offered</option>
-                    <option value="Rejected">Rejected</option>
-                    <option value="Withdrawn">Withdrawn</option>
-                </select>
-            </div>
-
-      {displayedApplications.length === 0 ? (
-        <p>No applications match the selected filter. <Link to="/jobs" style={{ color: '#4dabf7' }}>Browse jobs →</Link></p>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {displayedApplications.map((app) => {
-            
-            const currentStatus = app.status || 'Applied';
-            const statusStyle = getStatusStyle(currentStatus);
-            const canWithdraw = currentStatus !== 'Withdrawn' && currentStatus !== 'Rejected'; 
-
-            return (
-            <div key={app._id} style={{ padding: 16, border: '1px solid #555', borderRadius: 6, background: '#1e1e1e' }}>
-              <h3>{app.job ? app.job.title : 'Job No Longer Available'}</h3>
-              <h4 style={{ color: '#aaa', marginTop: -8 }}>{app.job ? app.job.company : 'Unknown Company'} {app.job?.location && `• ${app.job.location}`}</h4>
-              <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: '14px' }}>
-                <p><strong>Status:</strong> <span style={{ color: statusStyle.color, background: '#333', padding: '2px 6px', borderRadius: 4 }}>{currentStatus}</span></p>
-                
-                {renderTimeline(currentStatus)}
-
-                <p><strong>Applied On:</strong> {new Date(app.createdAt).toLocaleDateString()}</p>
-              </div>
-              {canWithdraw && (
-                <button
-                  onClick={() => withdrawApplication(app._id)}
-                  style={{background: '#3a1f1f', color: '#e57373', border: '1px solid #e57373', padding: '4px 10px', borderRadius: 4, cursor: 'pointer'}}
-                >
-                  Withdraw
-                </button>
-              )}
-              <p style={{ marginTop: 8, fontSize: '14px', color: '#ccc' }}><strong>CV Used:</strong> {app.resumeFilename || 'Default CV'}</p>
-              {app.coverLetterFilename && <p style={{ fontSize: '14px', color: '#ccc' }}><strong>Cover Letter:</strong> Attached</p>}
-            </div>
-            );
-          })}
+      <div className="page narrow">
+        <div style={{ marginBottom: 20 }}>
+          <button className="btn small" onClick={() => navigate('/jobs')}>← Back to Job Board</button>
         </div>
-      )}
-    </div>
+        <span className="eyebrow">Track your progress</span>
+        <h1>My Job Applications</h1>
+
+        <div className="filter-row">
+          <label htmlFor="status-filter">Filter by Status:</label>
+          <select
+            id="status-filter"
+            value={filteredStatus}
+            onChange={(e) => setFilteredStatus(e.target.value)}
+          >
+            <option value="All">All Statuses ({applications.length})</option>
+            <option value="Applied">Applied</option>
+            <option value="Under Review">Under Review</option>
+            <option value="Interview">Interview</option>
+            <option value="Offered">Offered</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Withdrawn">Withdrawn</option>
+          </select>
+        </div>
+
+        {displayedApplications.length === 0 ? (
+          <div className="card" style={{ padding: 28, textAlign: 'center' }}>
+            <p className="muted">No applications match the selected filter. <Link to="/jobs">Browse jobs →</Link></p>
+          </div>
+        ) : (
+          <div className="app-list">
+            {displayedApplications.map((app) => {
+              const currentStatus = app.status || 'Applied';
+              const canWithdraw = currentStatus !== 'Withdrawn' && currentStatus !== 'Rejected';
+
+              return (
+                <div key={app._id} className="card posting">
+                  <div className="posting-head">
+                    <div>
+                      <h3>{app.job ? app.job.title : 'Job No Longer Available'}</h3>
+                      <div className="job-co">{app.job ? app.job.company : 'Unknown Company'} {app.job?.location && `• ${app.job.location}`}</div>
+                    </div>
+                    <span className={`pill ${getStatusClass(currentStatus)}`}>{currentStatus}</span>
+                  </div>
+
+                  {renderTimeline(currentStatus)}
+
+                  <div className="app-details">
+                    <p><strong>Applied On:</strong> {new Date(app.createdAt).toLocaleDateString()}</p>
+                    <p><strong>CV Used:</strong> {app.resumeFilename || 'Default CV'}</p>
+                    {app.coverLetterFilename && <p><strong>Cover Letter:</strong> Attached</p>}
+                  </div>
+
+                  {canWithdraw && (
+                    <div className="posting-actions">
+                      <button className="btn small danger" onClick={() => withdrawApplication(app._id)}>
+                        Withdraw
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     );
 }
 
