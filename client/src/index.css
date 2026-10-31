@@ -1,111 +1,153 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
+/* CareerConnect global styles: design tokens, base elements, shared components.
+   Colors, fonts and radii come from the tokens below. Dark mode follows the OS setting. */
+:root{
+  --bg:#f3f7f7; --surface:#ffffff; --ink:#10202e; --muted:#566874; --line:#d9e3e5;
+  --accent:#0f766e; --accent-ink:#ffffff; --accent-soft:#dff3ef; --accent-deep:#0b5a54;
+  --warm:#b9780f; --warm-soft:#fdf0d5;
+  --good:#1a7f4b; --good-soft:#dcf3e5; --bad:#b42318; --bad-soft:#fde4e1; --info:#2457a6; --info-soft:#e0eafb;
+  --shadow:0 1px 2px rgba(16,32,46,.06),0 8px 24px rgba(16,32,46,.06);
+  --font-d:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --font-b:"Hanken Grotesk","Segoe UI",system-ui,sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1418; --surface:#122027; --ink:#e7f0f1; --muted:#94a8b0; --line:#233740;
+    --accent:#3dc2ae; --accent-ink:#04211d; --accent-soft:#12393a; --accent-deep:#7fe0d0;
+    --warm:#f0b45a; --warm-soft:#3a2c12;
+    --good:#5fd08f; --good-soft:#123324; --bad:#ff8f84; --bad-soft:#3b1a17; --info:#8fb4ff; --info-soft:#15284a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+    color-scheme:dark;
   }
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+:root[data-theme="dark"]{
+  --bg:#0b1418; --surface:#122027; --ink:#e7f0f1; --muted:#94a8b0; --line:#233740;
+  --accent:#3dc2ae; --accent-ink:#04211d; --accent-soft:#12393a; --accent-deep:#7fe0d0;
+  --warm:#f0b45a; --warm-soft:#3a2c12;
+  --good:#5fd08f; --good-soft:#123324; --bad:#ff8f84; --bad-soft:#3b1a17; --info:#8fb4ff; --info-soft:#15284a;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  color-scheme:dark;
 }
 
-body {
-  margin: 0;
-}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-b);line-height:1.5;-webkit-font-smoothing:antialiased}
+#root{min-height:100svh;display:flex;flex-direction:column}
+h1,h2,h3,h4{font-family:var(--font-d);line-height:1.15;color:var(--ink);letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:clamp(28px,4vw,38px);font-weight:800;margin:0 0 16px}
+h2{font-size:22px;font-weight:700;margin:28px 0 12px}
+h3{font-size:18px;font-weight:700;margin:20px 0 8px}
+p{margin:0}
+a{color:var(--accent-deep)}
+hr{border:0;border-top:1px solid var(--line);margin:20px 0}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
+/* page wrapper used by every screen */
+.page{width:100%;max-width:960px;margin:0 auto;padding:32px max(16px,env(safe-area-inset-left,0px)) 64px;text-align:left}
+.page.narrow{max-width:640px}
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
+/* buttons */
+button,.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 16px;font:600 15px/1.2 var(--font-b);cursor:pointer;text-decoration:none;transition:transform .12s,background .12s,border-color .12s}
+button:hover:not(:disabled),.btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary,button[type="submit"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover,button[type="submit"]:hover:not(:disabled){background:var(--accent-deep);border-color:var(--accent-deep);color:var(--accent-ink)}
+.btn.small{padding:6px 11px;font-size:14px}
+.btn.danger{color:var(--bad)}
+.btn.block{width:100%}
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
+/* form controls */
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;max-width:100%}
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea{width:100%}
+input:hover,select:hover,textarea:hover{border-color:var(--muted)}
+input:focus,select:focus,textarea:focus{outline:3px solid var(--accent-soft);border-color:var(--accent)}
+textarea{resize:vertical}
+label{font-weight:600;font-size:14px}
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
+/* shared components */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:600;white-space:nowrap;background:var(--accent-soft);color:var(--accent-deep)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warm-soft);color:var(--warm)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.info{background:var(--info-soft);color:var(--info)}
+.pill.plain{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.tag{font-size:13px;padding:3px 9px;border-radius:7px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-deep)}
+.muted{color:var(--muted)}
+.error{color:var(--bad);font-size:14px}
+.notice{padding:10px 14px;border-radius:10px;background:var(--accent-soft);color:var(--accent-deep);font-weight:600;margin:12px 0}
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-}
+/* sign in / create account */
+.auth-wrap{display:grid;place-items:start center;padding:48px max(16px,env(safe-area-inset-left,0px))}
+.auth-form{width:100%;max-width:420px;padding:32px;display:flex;flex-direction:column;gap:16px}
+.auth-form h1{margin:0}
+.field{display:flex;flex-direction:column;gap:6px;text-align:left}
+.auth-foot{text-align:center;color:var(--muted);font-size:14px}
+
+/* job list */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;padding:10px;margin-bottom:12px}
+.toolbar input{flex:1 1 260px;background:var(--bg);border-color:transparent}
+.toolbar select{flex:1 1 150px;width:auto;background:var(--bg);border-color:transparent}
+.job-card{display:grid;gap:8px;padding:16px;margin-bottom:10px;color:inherit;text-decoration:none;transition:border-color .12s,transform .12s}
+.job-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.job-card h3{margin:0;font-size:18px}
+.job-co{color:var(--muted)}
+.job-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:13px}
+.pager{display:flex;gap:6px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.pager button[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* job details */
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:16px;background:var(--bg);border-radius:12px;margin:16px 0}
+.facts small{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.facts b{font-size:15px}
+.prose{white-space:pre-wrap;color:var(--muted);line-height:1.65}
+.panel{padding:18px;margin-top:20px}
+
+/* recruiter dashboard */
+.dash-form{display:grid;gap:10px;padding:18px}
+.dash-form .row{display:flex;gap:8px;flex-wrap:wrap}
+.posting{padding:16px;margin-bottom:10px}
+.posting-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.posting h3{margin:0}
+.posting-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.app-row{padding:12px 0;border-top:1px solid var(--line);display:grid;gap:2px;font-size:15px}
+.app-row a{font-weight:600}
+
+/* application tracking (Applications page, job details confirmation, recruiter status) */
+.filter-row{display:flex;align-items:center;gap:10px;margin:16px 0 20px;flex-wrap:wrap}
+.filter-row select{width:auto;min-width:200px}
+.app-list{display:grid;gap:12px}
+.app-details{display:grid;gap:2px;margin-top:12px;font-size:14px;color:var(--muted)}
+.timeline{list-style:none;margin:16px 0 4px;padding:0;display:flex;gap:0;overflow-x:auto}
+.tl-step{flex:1;min-width:76px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;font-size:12px;color:var(--muted)}
+.tl-step::before{content:"";position:absolute;top:13px;left:-50%;width:100%;height:2px;background:var(--line);z-index:0}
+.tl-step:first-child::before{display:none}
+.tl-step.done::before,.tl-step.now::before{background:var(--accent)}
+.tl-dot{position:relative;z-index:1;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;border:2px solid var(--line);background:var(--surface)}
+.tl-step.done .tl-dot{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tl-step.now .tl-dot{border-color:var(--accent);color:var(--accent-deep);box-shadow:0 0 0 4px var(--accent-soft)}
+.tl-step.now .tl-label{color:var(--ink);font-weight:700}
+.success-card{border-color:var(--good)}
+.success-card h3{color:var(--good)}
+.alert-error{margin-bottom:12px;padding:10px 12px;border-radius:10px;background:var(--bad-soft);color:var(--bad);font-weight:600}
+.status-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.status-row select{width:auto;padding:6px 10px}
+
+/* profile pages (existing class names kept) */
+.form-row{display:grid;grid-template-columns:140px 1fr;align-items:center;gap:12px;width:100%}
+.form-row label{text-align:left}
+.form-row p,.form-row span,.display-profile p,.display-profile span{word-break:break-word;overflow-wrap:anywhere;text-align:left;margin:0}
+.view-box-style{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow-wrap:anywhere}
+.display-profile{display:flex;flex-direction:column;gap:16px;max-width:640px;margin:0 auto;padding:32px 16px 64px;text-align:left}
+.display-profile>button{width:100%}
+@media (max-width:560px){.form-row{grid-template-columns:1fr}}
+
+/* Bridge for pages that still use inline button colors (Profile, EditProfile, JobDetails).
+   Remove once those buttons use the .btn classes. */
+button[style*="#007bff"],button[style*="#28a745"]{background:var(--accent)!important;border-color:var(--accent)!important;color:var(--accent-ink)!important;border-radius:10px!important}
+button[style*="#dc3545"]{background:var(--bad-soft)!important;color:var(--bad)!important;border:1px solid var(--bad)!important;border-radius:10px!important}
+button[style*="#6c757d"],button[style*="#f8f9fa"],button[style*="#555"],button[style*="#ccc"]{background:var(--surface)!important;color:var(--ink)!important;border:1px solid var(--line)!important;border-radius:10px!important}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
