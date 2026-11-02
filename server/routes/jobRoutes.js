@@ -107,7 +107,7 @@ router.get('/', async (req, res) => {
       .sort({ createdAt: -1, _id: -1 })
       .skip((page - 1) * PAGE_SIZE)
       .limit(PAGE_SIZE)
-      .select('title company location category type salaryMin salaryMax deadline createdAt')
+      .select('title company location category type salaryMin salaryMax salaryPeriod deadline createdAt')
       .lean()
     res.json({ jobs, page, totalPages: Math.ceil(total / PAGE_SIZE), total })
   } catch (err) {
@@ -128,13 +128,56 @@ router.get('/filters', async (req, res) => {
   }
 })
 
+// Reads the optional salary fields from a request body (salaryMin, salaryMax, salaryPeriod).
+// An empty value means "no salary", so it clears the field.
+function readSalary(body) {
+  const values = {}
+  for (const key of ['salaryMin', 'salaryMax']) {
+    if (body[key] === undefined) continue
+    if (body[key] === null || body[key] === '') {
+      values[key] = undefined
+      continue
+    }
+    const amount = Number(body[key])
+    if (!Number.isFinite(amount) || amount < 0) {
+      return { error: 'Salary must be a positive number' }
+    }
+    values[key] = amount
+  }
+  if (body.salaryPeriod !== undefined) {
+    if (!['yearly', 'hourly'].includes(body.salaryPeriod)) {
+      return { error: 'Salary period must be yearly or hourly' }
+    }
+    values.salaryPeriod = body.salaryPeriod
+  }
+  return { values }
+}
+
+// Reads the optional deadline (a date like 2026-11-15). The posting stays open until the end of that day.
+// An empty value means "no deadline", so it clears the field.
+function readDeadline(body) {
+  if (body.deadline === undefined) return { values: {} }
+  if (body.deadline === null || body.deadline === '') return { values: { deadline: undefined } }
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(body.deadline) ? `${body.deadline}T23:59:59` : body.deadline)
+  if (Number.isNaN(date.getTime())) return { error: 'Deadline must be a valid date' }
+  return { values: { deadline: date } }
+}
+
 router.post('/', requireAuth, requireRecruiter, async (req, res) => {
   try {
     const { title, company, location, type, description } = req.body
     if (!title || !company || !description) {
       return res.status(400).json({ message: 'Title, company and description are required' })
     }
-    const job = await Job.create({ recruiter: req.userId, title, company, location, type, description })
+    const salary = readSalary(req.body)
+    if (salary.error) return res.status(400).json({ message: salary.error })
+    const { salaryMin, salaryMax } = salary.values
+    if (salaryMin !== undefined && salaryMax !== undefined && salaryMin > salaryMax) {
+      return res.status(400).json({ message: 'Minimum salary cannot be higher than the maximum' })
+    }
+    const deadline = readDeadline(req.body)
+    if (deadline.error) return res.status(400).json({ message: deadline.error })
+    const job = await Job.create({ recruiter: req.userId, title, company, location, type, description, ...salary.values, ...deadline.values })
     res.status(201).json(job)
   } catch (err) {
     res.status(500).json({ message: 'Could not create posting' })
@@ -229,6 +272,15 @@ router.put('/:id', requireAuth, requireRecruiter, async (req, res) => {
     if (location !== undefined) job.location = location
     if (type !== undefined) job.type = type
     if (description !== undefined) job.description = description
+    const salary = readSalary(req.body)
+    if (salary.error) return res.status(400).json({ message: salary.error })
+    Object.assign(job, salary.values)
+    const deadline = readDeadline(req.body)
+    if (deadline.error) return res.status(400).json({ message: deadline.error })
+    Object.assign(job, deadline.values)
+    if (job.salaryMin !== undefined && job.salaryMax !== undefined && job.salaryMin > job.salaryMax) {
+      return res.status(400).json({ message: 'Minimum salary cannot be higher than the maximum' })
+    }
     await job.save()
     res.json(job)
   } catch (err) {

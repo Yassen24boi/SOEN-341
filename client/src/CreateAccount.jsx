@@ -9,7 +9,8 @@ function CreateAccount() {
   const navigate = useNavigate()
 
   return (
-    <form onSubmit={async (e) => {
+    <div className="auth-wrap">
+    <form className="card auth-form" onSubmit={async (e) => {
       e.preventDefault()
       try {
         const res = await fetch('http://localhost:5000/api/auth/register', {
@@ -25,6 +26,7 @@ function CreateAccount() {
         }
 
         localStorage.setItem('token', data.token)
+        localStorage.setItem('role', data.user.role)
         alert(`Account created! Welcome, ${data.user.fullName}`)
 
         // Redirect new job seekers straight to profile setup, and recruiters to their dashboard
@@ -40,9 +42,12 @@ function CreateAccount() {
         alert('Could not reach the server')
       }
     }}>
-      <h1>Create Account</h1>
+      <div>
+        <span className="eyebrow">Join CareerConnect</span>
+        <h1>Create account</h1>
+      </div>
 
-      <div className="form-row">
+      <div className="field">
       <label htmlFor="fullName">Full Name:</label>
       <input
         id="fullName"
@@ -52,7 +57,7 @@ function CreateAccount() {
         required
       /></div>
 
-      <div className="form-row">
+      <div className="field">
       <label htmlFor="email">Email:</label>
       <input
         id="email"
@@ -62,7 +67,7 @@ function CreateAccount() {
         required
       /></div>
 
-      <div className="form-row">
+      <div className="field">
       <label htmlFor="password">Password:</label>
       <input
         id="password"
@@ -72,19 +77,17 @@ function CreateAccount() {
         required
       /></div>
 
-      <div className="form-row">
+      <div className="field">
       <label htmlFor="role">I am a:</label>
       <select id="role" value={role} onChange={(e) => setRole(e.target.value)}>
         <option value="jobseeker">Job Seeker</option>
         <option value="recruiter">Recruiter</option>
       </select></div>
 
-      <br />
-      <button type="submit">Create Account</button>
-
-      <br />
-      <Link to="/login">Already have an account? Log in</Link>
+      <button type="submit" className="btn primary block">Create account</button>
+      <p className="auth-foot">Already have an account? <Link to="/login">Log in</Link></p>
     </form>
+    </div>
   )
 }
 
