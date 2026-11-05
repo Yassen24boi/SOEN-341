@@ -3,6 +3,7 @@ const requireAuth = require('../middleware/auth')
 const User = require('../models/User')
 const Job = require('../models/Job')
 const Application = require('../models/Application')
+const Notification = require('../models/Notification')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const router = express.Router()
@@ -210,7 +211,13 @@ router.post('/:id/apply', requireAuth, upload.single('coverLetterFile'), async (
       applicant: req.userId, 
       resumeFilename: resumeFilename || null,
       coverLetterFilename: coverLetterFilename
+      
     })
+    try {
+     await Notification.create({ recipient: job.recruiter, type: 'new_application', message: `A new candidate applied to your "${job.title}" posting.`, application: app._id,job: job._id})
+} catch (notificationError) {
+  console.error('Could not create recruiter notification:', notificationError)
+}
 
     const populatedApp = await Application.findById(app._id).populate('job', 'title')
 
