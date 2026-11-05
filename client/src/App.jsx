@@ -10,6 +10,7 @@ import './App.css'
 import RecruiterDashboard from './RecruiterDashboard'
 import Navbar from "./Components/Navbar"
 import './Components/Navbar.css'
+import Notifications from './Notifications'
 import RequireAuth from './Components/RequireAuth'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
       <Navbar />
 
       <Routes>
+        <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
         <Route path="/login" element={<Login />} />
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/recruiter" element={<RequireAuth><RecruiterDashboard /></RequireAuth>} />
