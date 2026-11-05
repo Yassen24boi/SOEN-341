@@ -2,40 +2,38 @@
 
 ## 1. Sprint Overview
 
-Sprint 3 focuses on completing CareerConnect's remaining core functionality, integrating previously developed components, and improving software quality through automated testing.
+Sprint 3 focuses on completing CareerConnect's remaining core functionality, integrating previously developed features, and improving software quality through automated testing.
 
-Building on Sprints 1 and 2, the team will prioritize the completion of the recruiter dashboard, application analytics, and notification system while beginning development of the Generative AI features.
+Building on Sprints 1 and 2, the team will complete recruiter dashboard functionality, implement application analytics and notifications, and begin development of Generative AI features.
 
-Development responsibilities will be distributed among team members to ensure individual technical contributions and effective collaboration.
+Development responsibilities will be distributed among all five team members to ensure balanced individual contributions.
 
 ## 2. Sprint Goal
 
-The primary goal of Sprint 3 is to deliver a more complete, integrated, and reliable CareerConnect platform.
+The primary goal of Sprint 3 is to deliver a functional and integrated CareerConnect platform.
 
 The team aims to:
 
-- Complete recruiter dashboard and job posting management.
-- Implement application history and analytics functionality.
-- Develop in-app notifications and reminders.
-- Begin implementing AI-powered resume feedback and job matching suggestions.
+- Complete recruiter dashboard and posting management.
+- Implement application history and analytics.
+- Develop notifications and reminders.
+- Begin AI-powered resume feedback and job matching.
 - Create acceptance tests for all Sprint 3 user stories.
 - Implement automated unit tests for Sprint 3 features.
-- Maintain and verify the Continuous Integration (CI) pipeline.
-- Review and refine functionality developed during previous sprints.
-- Maintain organized GitHub Issues, tasks, and project documentation.
+- Maintain the Continuous Integration (CI) pipeline.
+- Review and refine previous sprint functionality.
+- Maintain GitHub Issues, project documentation, and contribution logs.
 - Ensure all team members contribute to development and testing.
 
 ## 3. Team Roles & Responsibilities
 
 | Team Member | Role | Primary Responsibilities |
 |---|---|---|
-| Yassen Hegazy | Scrum Master / Backend Developer | Sprint coordination, GitHub management, notification system integration, documentation |
-| Julia Kyrychuk | Frontend Developer / QA Tester | Application analytics interface, acceptance testing, unit testing, CI verification |
-| Noor Rabie | Full-Stack Developer / Issue Manager | AI functionality, GitHub issue management, user stories, task breakdown |
-| Jose David Torres | Full-Stack Developer / Database Developer | Application analytics backend, MongoDB integration, application history |
-| Michel Yosufov | Backend Developer | Recruiter dashboard, posting management, candidate review and application status updates |
-
-All members are responsible for testing their implemented features and contributing to integration and documentation.
+| Yassen Hegazy | Scrum Master / Full-Stack Developer | Notifications, unit test coordination, CI integration, sprint planning and documentation |
+| Julia Kyrychuk | Frontend Developer / QA Tester | Application history, analytics dashboard, data visualization, testing |
+| Noor Rabie | Full-Stack Developer / Issue Manager | Interview invitations, Generative AI integration, GitHub issue management |
+| Jose David Torres | Full-Stack Developer / Database Developer | Candidate review, application status management, deadline reminders |
+| Michel Yosufov | Backend Developer | Recruiter dashboard, posting management, application filtering |
 
 ## 4. Sprint 3 Backlog — User Stories
 
@@ -47,17 +45,17 @@ The following user stories have been created in the CareerConnect GitHub reposit
 
 | Issue # | Issue Title | Responsible Member | Priority | Status |
 |---|---|---|---|---|
-| Sprint 3 issue | US-20: Complete Recruiter Posting Management | Michel Yosufov | High | Not Started |
+| TBD | US-20: Recruiter Posting Management | Michel Yosufov | High | Not Started |
 | #80 | US-21: Archive and Restore Job Postings | Michel Yosufov | High | Not Started |
 | #81 | US-22: Filter and Sort Applications for a Posting | Michel Yosufov | High | Not Started |
-| #82 | US-23: Review a Candidate | Michel Yosufov | High | Not Started |
-| #83 | US-24: Update a Candidate's Application Status | Michel Yosufov | High | Not Started |
+| #82 | US-23: Review a Candidate | Jose David Torres | High | Not Started |
+| #83 | US-24: Update a Candidate's Application Status | Jose David Torres | High | Not Started |
 
 **Expected Deliverable:**
 
-Recruiters can manage their job postings, archive and restore postings, filter applications, review candidates, and update application statuses through the recruiter dashboard.
+Recruiters can manage job postings, archive and restore postings, filter applications, review candidates, and update application statuses.
 
-Previously developed recruiter functionality will be refined and fully integrated.
+Previously developed recruiter functionality will be refined and integrated with the application management system.
 
 ### Feature 2 — Application Analytics & History Dashboard
 
@@ -65,15 +63,13 @@ Previously developed recruiter functionality will be refined and fully integrate
 
 | Issue # | Issue Title | Responsible Member | Priority | Status |
 |---|---|---|---|---|
-| #84 | US-25: See My Full Application History | Julia Kyrychuk / Jose David Torres | High | Not Started |
-| #85 | US-26: See a Breakdown of My Application Statuses | Julia Kyrychuk / Jose David Torres | High | Not Started |
-| #86 | US-27: See My Job-Search Activity Over Time | Julia Kyrychuk / Jose David Torres | Medium | Not Started |
+| #84 | US-25: See My Full Application History | Julia Kyrychuk | High | Not Started |
+| #85 | US-26: See a Breakdown of My Application Statuses | Julia Kyrychuk | High | Not Started |
+| #86 | US-27: See My Job-Search Activity Over Time | Julia Kyrychuk | Medium | Not Started |
 
 **Expected Deliverable:**
 
-Job seekers can view their complete application history, visualize application status distributions, and monitor their job-search activity over time.
-
-Julia will focus on the frontend interface and visualizations, while Jose David will support database queries, APIs, and application data integration.
+Job seekers can view their application history, monitor application statuses, and visualize job-search activity through an integrated dashboard.
 
 ### Feature 3 — Notifications & Reminders
 
@@ -83,15 +79,15 @@ Julia will focus on the frontend interface and visualizations, while Jose David 
 |---|---|---|---|---|
 | #87 | US-28: In-App Notification Centre | Yassen Hegazy | High | Not Started |
 | #88 | US-29: Notify Job Seekers of Application Updates | Yassen Hegazy | High | Not Started |
-| #89 | US-30: Send Interview Invitations | Yassen Hegazy | High | Not Started |
-| #90 | US-31: Remind Users of Upcoming Deadlines | Yassen Hegazy | Medium | Not Started |
+| #89 | US-30: Send Interview Invitations | Noor Rabie | High | Not Started |
+| #90 | US-31: Remind Users of Upcoming Deadlines | Jose David Torres | Medium | Not Started |
 | #91 | US-32: Notify Recruiters of New Applications | Yassen Hegazy | Medium | Not Started |
 
 **Expected Deliverable:**
 
-Users receive relevant in-app notifications for application updates, interview invitations, approaching deadlines, and new applications.
+Users receive in-app notifications for application updates, interview invitations, upcoming deadlines, and new applications.
 
-The notification centre will integrate with existing user accounts, job applications, and recruiter workflows.
+Notification functionality will integrate with existing user accounts, job applications, and recruiter workflows.
 
 ### Feature 4 — Generative AI Integration
 
@@ -104,18 +100,11 @@ The notification centre will integrate with existing user accounts, job applicat
 
 **Expected Deliverable:**
 
-Initial Generative AI functionality that supports resume analysis or job matching recommendations.
+Initial development of AI-powered functionality supporting resume feedback and job matching.
 
-Planned activities include:
+Planned activities include researching AI integration approaches, developing an initial prototype, integrating backend functionality, and documenting technical decisions.
 
-- Research appropriate AI integration approaches.
-- Define the inputs and expected outputs.
-- Begin implementing backend integration.
-- Develop an initial prototype.
-- Test the initial functionality.
-- Document AI-assisted development decisions and limitations.
-
-The official requirement is to begin at least one approved AI feature during Sprint 3 and complete it during Sprint 4. Both stories are included in the backlog, but full completion of both is not required for Sprint 3.
+At least one Generative AI feature must begin during Sprint 3 and be completed during Sprint 4.
 
 ### Feature 5 — Quality Assurance & Unit Testing
 
@@ -123,17 +112,28 @@ The official requirement is to begin at least one approved AI feature during Spr
 
 | Issue # | Issue Title | Responsible Member | Priority | Status |
 |---|---|---|---|---|
-| #94 | US-35: Unit Tests for All Sprint 3 Features Run in CI | Julia Kyrychuk / All Members | High | Not Started |
+| #94 | US-35: Unit Tests for All Sprint 3 Features Run in CI | Yassen Hegazy | High | Not Started |
 
 **Expected Deliverable:**
 
-A functional automated testing workflow that executes unit tests for all Sprint 3 features through the CI pipeline.
+Automated unit tests for all Sprint 3 features executed through the CI pipeline.
 
-Each developer will write tests for their implemented functionality. Julia will coordinate test integration and CI verification.
+Yassen will coordinate CI integration and verification. Each developer remains responsible for implementing unit tests for their assigned features.
+
+### User Story Distribution Summary
+
+| Team Member | User Stories | Total |
+|---|---|---|
+| Yassen Hegazy | US-28, US-29, US-32, US-35 | **4** |
+| Julia Kyrychuk | US-25, US-26, US-27 | 3 |
+| Noor Rabie | US-30, US-33, US-34 | 3 |
+| Jose David Torres | US-23, US-24, US-31 | 3 |
+| Michel Yosufov | US-20, US-21, US-22 | 3 |
+| **Total** | | **16** |
 
 ## 5. Sprint 1 & Sprint 2 Features — Review & Testing
 
-The following previously implemented features will be reviewed and tested during Sprint 3:
+The following previously implemented features will be reviewed and tested during Sprint 3.
 
 | Feature | Responsible Member |
 |---|---|
@@ -142,9 +142,9 @@ The following previously implemented features will be reviewed and tested during
 | Job Search and Filtering | Noor Rabie |
 | Job Application Submission and Tracking | Jose David Torres |
 | Initial Recruiter Dashboard | Michel Yosufov |
-| Existing Automated Tests and CI Pipeline | Julia Kyrychuk |
+| Existing CI Pipeline and Automated Tests | Yassen Hegazy / Julia Kyrychuk |
 
-The team will verify existing functionality, address outstanding issues, and ensure compatibility with newly implemented features.
+The team will verify existing functionality, resolve outstanding issues, and ensure compatibility with newly implemented features.
 
 ## 6. Sprint 3 Development & Management Tasks
 
@@ -154,24 +154,25 @@ The following tasks will be tracked through GitHub Issues and linked to their co
 |---|---|---|---|
 | Sprint 3 Planning and Coordination | Yassen | High | Not Started |
 | GitHub Project Board Management | Yassen | High | Not Started |
-| Complete Recruiter Dashboard | Michel | High | Not Started |
-| Implement Posting Archive and Restore | Michel | High | Not Started |
-| Implement Application Filtering | Michel | High | Not Started |
-| Implement Candidate Review and Status Updates | Michel | High | Not Started |
-| Implement Application History Interface | Julia | High | Not Started |
-| Implement Application Analytics Visualizations | Julia | High | Not Started |
-| Develop Application Analytics APIs | Jose David | High | Not Started |
-| Integrate Application Data with MongoDB | Jose David | High | Not Started |
 | Implement Notification Centre | Yassen | High | Not Started |
 | Implement Application Update Notifications | Yassen | High | Not Started |
-| Implement Interview Invitations and Reminders | Yassen | High | Not Started |
 | Implement Recruiter Notifications | Yassen | Medium | Not Started |
-| Begin AI Resume Feedback Development | Noor | High | Not Started |
-| Begin AI Job Matching Development | Noor | Medium | Not Started |
-| Organize GitHub Issues and User Stories | Noor | High | Not Started |
+| Coordinate Unit Testing and CI Integration | Yassen | High | Not Started |
+| Implement Application History Dashboard | Julia | High | Not Started |
+| Implement Application Status Breakdown | Julia | High | Not Started |
+| Implement Job-Search Activity Visualizations | Julia | Medium | Not Started |
+| Implement Interview Invitations | Noor | High | Not Started |
+| Begin AI-Powered Resume Feedback | Noor | High | Not Started |
+| Begin AI Job Matching Suggestions | Noor | Medium | Not Started |
+| Organize GitHub Issues and Tasks | Noor | High | Not Started |
+| Implement Candidate Review | Jose David | High | Not Started |
+| Implement Candidate Application Status Updates | Jose David | High | Not Started |
+| Implement Deadline Reminders | Jose David | Medium | Not Started |
+| Complete Recruiter Posting Management | Michel | High | Not Started |
+| Implement Posting Archive and Restore | Michel | High | Not Started |
+| Implement Application Filtering and Sorting | Michel | High | Not Started |
 | Prepare Acceptance Tests | All Members | High | Not Started |
-| Implement Sprint 3 Unit Tests | All Members | High | Not Started |
-| Verify Automated Tests in CI | Julia | High | Not Started |
+| Implement Unit Tests for Assigned Features | All Members | High | Not Started |
 | Execute Integration Tests and Report Bugs | All Members | High | Not Started |
 | Maintain AI Usage and Contribution Logs | All Members | High | Not Started |
 | Prepare Sprint 3 Summary Report | Yassen / All Members | Medium | Not Started |
@@ -185,42 +186,40 @@ The following tasks will be tracked through GitHub Issues and linked to their co
 
 At least one acceptance test must be created for each Sprint 3 user story.
 
+With 16 user stories, the team will prepare at least 16 acceptance tests, including tests for the planned initial AI functionality.
+
 **Planned Activities**
 
-- Define acceptance criteria for each user story.
 - Create and organize acceptance tests.
-- Link acceptance tests to corresponding GitHub Issues.
-- Specify expected outcomes.
+- Link tests to corresponding GitHub Issues.
+- Define expected outcomes.
 - Execute tests against implemented functionality.
-- Record results and report identified bugs.
-- Verify fixes and retest affected features.
-- Document testing evidence for evaluation.
+- Record test results.
+- Report identified bugs.
+- Verify corrected functionality.
 
 **Proposed Target Dates**
 
-- November 5–7: Define and organize acceptance tests.
-- November 8–12: Execute acceptance tests during development.
-- November 13: Final testing and verification.
+- November 5–7: Create and organize acceptance tests.
+- November 8–12: Execute tests and report issues.
+- November 13: Complete testing and verify fixes.
 
 ## 8. Continuous Integration & Unit Testing
 
-**Testing Coordinator:** Julia Kyrychuk  
-**Unit Test Contributors:** All Developers
+**Responsible:** Yassen Hegazy  
+**Test Contributors:** All Team Members
 
 **Target Completion:** November 13, 2026 (proposed)
 
 **Planned Tasks**
 
 - Maintain the existing GitHub Actions CI pipeline.
-- Implement unit tests for all Sprint 3 features.
-- Test frontend components and backend logic.
-- Verify API functionality and database operations.
-- Configure unit tests to execute automatically through CI.
-- Verify CI execution on pull requests.
-- Resolve failing tests and pipeline errors.
-- Document successful automated test execution.
-
-Each team member will be responsible for the unit tests associated with their assigned features.
+- Implement automated unit tests for Sprint 3 features.
+- Integrate tests into the CI workflow.
+- Verify tests run when pull requests are created.
+- Resolve pipeline configuration errors.
+- Document successful CI execution.
+- Ensure all developers contribute unit tests for their features.
 
 ## 9. Scrum Master Responsibilities
 
@@ -230,16 +229,15 @@ Each team member will be responsible for the unit tests associated with their as
 
 - Facilitate Sprint 3 planning.
 - Coordinate task assignments.
-- Establish priorities and proposed deadlines.
+- Establish priorities and deadlines.
 - Ensure user stories are broken into development tasks.
 
 **Sprint Monitoring**
 
 - Maintain the GitHub Project Board.
-- Track task progress and completion.
-- Identify and communicate blockers.
+- Track task progress.
+- Identify blockers.
 - Coordinate communication between team members.
-- Monitor pull requests and feature integration.
 - Ensure GitHub Issues remain updated.
 
 **Sprint Delivery**
@@ -247,27 +245,26 @@ Each team member will be responsible for the unit tests associated with their as
 - Monitor completion of required deliverables.
 - Coordinate sprint documentation.
 - Ensure contribution logs and AI usage logs are maintained.
-- Organize the final Sprint 3 demonstration.
-- Coordinate preparation of the Sprint 3 Summary Report.
-- Verify that required artifacts are available in the repository.
+- Organize the final sprint demonstration.
+- Prepare the Sprint 3 Summary Report.
 
 ## 10. Sprint Schedule
 
-The following schedule is proposed and will be adjusted to the confirmed laboratory evaluation date.
+The following dates are proposed and should be adjusted to the confirmed evaluation deadline.
 
 | Date | Planned Activities | Responsible Members |
 |---|---|---|
-| Nov 5 | Finalize Sprint 3 plan and distribute responsibilities | Yassen / All Members |
-| Nov 6 | Organize GitHub Issues, create tasks, define acceptance tests | Noor / Julia / All Members |
-| Nov 7 | Begin recruiter dashboard, analytics, notifications, and AI development | All Developers |
-| Nov 8 | Continue core feature implementation and backend integration | All Developers |
-| Nov 9 | Develop analytics APIs, notification logic, and recruiter features | Jose / Yassen / Michel / Julia |
-| Nov 10 | Integrate frontend and backend components | All Developers |
-| Nov 11 | Complete recruiter dashboard and application analytics | Michel / Julia / Jose |
-| Nov 12 | Complete notifications and initial AI development milestone | Yassen / Noor |
-| Nov 13 | Execute unit tests, acceptance tests, CI checks, and bug fixes | Julia / All Members |
-| Nov 14 | Final integration, documentation, and demonstration preparation | All Members |
-| Before evaluation | Verify repository, reports, logs, and demonstration | All Members |
+| Nov 5 | Finalize sprint plan and distribute responsibilities | Yassen / All Members |
+| Nov 6 | Create development tasks, organize GitHub Issues, define acceptance tests | Noor / All Members |
+| Nov 7 | Begin core feature development | All Developers |
+| Nov 8 | Continue recruiter dashboard, analytics, notifications, and AI development | All Developers |
+| Nov 9 | Implement backend APIs and integrate frontend components | All Developers |
+| Nov 10 | Continue core feature development and initial testing | All Developers |
+| Nov 11 | Complete recruiter dashboard and analytics features | Michel / Julia / Jose David |
+| Nov 12 | Complete notification functionality and initial AI milestone | Yassen / Noor / Jose David |
+| Nov 13 | Execute acceptance tests, unit tests, and CI verification | All Members |
+| Nov 14 | Final integration testing, code reviews, and bug fixes | All Members |
+| Before Evaluation | Prepare demonstration, summary report, and contribution logs | All Members |
 
 ## 11. Shared Team Responsibilities
 
@@ -275,23 +272,21 @@ All team members are responsible for:
 
 - Updating assigned GitHub Issues.
 - Maintaining individual contribution logs.
-- Recording time spent on development activities.
+- Recording time spent on activities.
 - Providing links to commits, pull requests, and issues.
 - Maintaining individual AI usage logs.
 - Participating in sprint meetings.
 - Reviewing pull requests when assigned.
-- Writing and executing tests for their implemented features.
+- Testing implemented functionality.
 - Communicating blockers and delays.
-- Supporting integration and debugging.
-- Preparing to explain their contributions during evaluation.
 
 ## 12. Definition of Done
 
-A Sprint 3 task is considered complete when:
+A task is considered complete when:
 
 - Required functionality has been implemented.
-- Acceptance criteria have been satisfied.
-- Relevant unit tests have passed.
+- Relevant acceptance tests have passed.
+- Unit tests have passed.
 - Code has been reviewed and approved.
 - Changes have been merged into the appropriate branch.
 - Required CI checks pass.
@@ -303,28 +298,28 @@ A Sprint 3 task is considered complete when:
 - Completed Recruiter Dashboard and Posting Management.
 - Completed Application Analytics and History Dashboard.
 - Completed Notifications and Reminders.
-- Initial implementation of at least one approved Generative AI feature.
-- Acceptance tests for all Sprint 3 user stories.
-- Automated unit tests for all Sprint 3 features.
+- Initial Generative AI Feature Implementation.
+- Acceptance Tests for Sprint 3 User Stories.
+- Automated Unit Tests for Sprint 3 Features.
 - Functional Continuous Integration Pipeline.
 - Updated GitHub Project Board and Sprint Backlog.
-- Updated Meeting Minutes.
-- Detailed Individual Contribution Logs.
+- Individual Contribution Logs.
 - Updated AI Usage Logs.
-- Individual Sprint 3 PDF reports in personal AI_Log directories.
+- Individual Sprint 3 PDF Reports.
 - One-Page Sprint 3 Summary Report.
+- Updated Meeting Minutes.
 - Demonstration of Implemented Features.
 
 ## 14. Sprint Completion Criteria
 
 Sprint 3 will be considered ready for evaluation when:
 
-- All required core features have been implemented and integrated.
+- All mandatory core features have been implemented.
 - At least one approved Generative AI feature has begun development.
-- Acceptance tests have been created and executed.
-- Unit tests for Sprint 3 features run automatically through CI.
-- Existing functionality has been reviewed and verified.
-- Required documentation has been updated.
+- Acceptance tests have been created and linked to user stories.
+- Unit tests have been implemented and run automatically through CI.
+- Previous sprint functionality has been reviewed and integrated.
+- All required documentation has been updated.
 - Individual contributions have been recorded.
 - The team has prepared a demonstration.
-- The GitHub repository reflects the current project state and contains all required artifacts.
+- The GitHub repository reflects the current project state.
