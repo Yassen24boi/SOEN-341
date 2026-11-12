@@ -356,6 +356,48 @@ describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', (
             expect(res.statusCode).toEqual(200);
             expect(names(res)).toEqual(['Bob', 'Alice', 'Charlie']);
         });
+
+        it('should filter by a date range, newest first (AT-22.6)', async () => {
+            const res = await request(app)
+                .get(`/api/jobs/${sortJob._id}/applications?from=2026-01-02&to=2026-01-03`)
+                .set(auth(tokenA));
+
+            expect(res.statusCode).toEqual(200);
+            expect(names(res)).toEqual(['Bob', 'Alice']);
+        });
+
+        it('should support a from-only date and ignore an invalid date (AT-22.7)', async () => {
+            const fromOnly = await request(app)
+                .get(`/api/jobs/${sortJob._id}/applications?from=2026-01-03`)
+                .set(auth(tokenA));
+            const badDate = await request(app)
+                .get(`/api/jobs/${sortJob._id}/applications?from=notadate`)
+                .set(auth(tokenA));
+
+            expect(names(fromOnly)).toEqual(['Bob']);
+            expect(badDate.statusCode).toEqual(200);
+            expect(badDate.body).toHaveLength(3);
+        });
+
+        it('should combine status, date range and sort (AT-22.8)', async () => {
+            const combined = await request(app)
+                .get(`/api/jobs/${sortJob._id}/applications?status=Applied&from=2026-01-02&sort=oldest`)
+                .set(auth(tokenA));
+            const statusAndSort = await request(app)
+                .get(`/api/jobs/${sortJob._id}/applications?status=Applied&sort=oldest`)
+                .set(auth(tokenA));
+
+            expect(names(combined)).toEqual(['Bob']);
+            expect(names(statusAndSort)).toEqual(['Charlie', 'Bob']);
+        });
+
+        it('should return per-status counts on each posting in the dashboard list (AT-22.9)', async () => {
+            const res = await request(app).get('/api/jobs/mine').set(auth(tokenA));
+            const found = res.body.find((j) => j._id === sortJob._id);
+
+            expect(res.statusCode).toEqual(200);
+            expect(found.statusCounts).toEqual({ Applied: 2, Interview: 1 });
+        });
     });
 
 });

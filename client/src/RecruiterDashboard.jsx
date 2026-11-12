@@ -17,6 +17,11 @@ function salaryText(job) {
   return ''
 }
 
+// "12 Applied · 3 Interview"
+function statusSummary(job) {
+  return Object.entries(job.statusCounts || {}).map(([status, n]) => `${n} ${status}`).join(' · ')
+}
+
 // Turns a saved deadline into the "YYYY-MM-DD" text a date input needs (in the user's own time zone)
 function toDateInput(value) {
   if (!value) return ''
@@ -39,6 +44,8 @@ function RecruiterDashboard() {
   const [tab, setTab] = useState('active')
   const [appStatus, setAppStatus] = useState('')
   const [appSort, setAppSort] = useState('newest')
+  const [appFrom, setAppFrom] = useState('')
+  const [appTo, setAppTo] = useState('')
 
   async function loadJobs() {
     const res = await fetch(`${API}/mine`, { headers })
@@ -97,11 +104,6 @@ function RecruiterDashboard() {
     loadJobs()
   }
 
-  async function setStatus(job, status) {
-    await fetch(`${API}/${job._id}/status`, { method: 'PATCH', headers, body: JSON.stringify({ status }) })
-    loadJobs()
-  }
-
   async function toggleStatus(job) {
     const status = job.status === 'open' ? 'closed' : 'open'
     await fetch(`${API}/${job._id}/status`, { method: 'PATCH', headers, body: JSON.stringify({ status }) })
@@ -115,10 +117,12 @@ function RecruiterDashboard() {
     loadJobs()
   }
 
-  async function loadApplications(jobId, status, sort) {
+  async function loadApplications(jobId, filters) {
     const params = new URLSearchParams()
-    if (status) params.set('status', status)
-    if (sort) params.set('sort', sort)
+    if (filters.status) params.set('status', filters.status)
+    if (filters.sort) params.set('sort', filters.sort)
+    if (filters.from) params.set('from', filters.from)
+    if (filters.to) params.set('to', filters.to)
     const res = await fetch(`${API}/${jobId}/applications?${params}`, { headers })
     const data = await res.json()
     if (!res.ok) return setMessage(data.message || 'Could not load applications')
@@ -126,10 +130,17 @@ function RecruiterDashboard() {
     setApplicationsFor(jobId)
   }
 
+  function changeFilter(job, changes) {
+    const next = { status: appStatus, sort: appSort, from: appFrom, to: appTo, ...changes }
+    setAppStatus(next.status)
+    setAppSort(next.sort)
+    setAppFrom(next.from)
+    setAppTo(next.to)
+    loadApplications(job._id, next)
+  }
+
   function viewApplications(job) {
-    setAppStatus('')
-    setAppSort('newest')
-    loadApplications(job._id, '', 'newest')
+    changeFilter(job, { status: '', sort: 'newest', from: '', to: '' })
   }
 
   async function updateApplicationStatus(appId, newStatus) {
@@ -148,6 +159,7 @@ function RecruiterDashboard() {
       setApplications((prev) =>
         prev.map((app) => (app._id === appId ? { ...app, status: newStatus } : app))
       )
+      loadJobs()
 
     } catch (err) {
       console.error(err)
@@ -225,8 +237,7 @@ function RecruiterDashboard() {
       </div>
       {shownJobs.length === 0 && (
         <div className="card" style={{ padding: 28, textAlign: 'center' }}>
-          <p className="muted">{tab === 'archived' ? 'No archived postings.' : 'No postings yet. Create your first one above.'}</p>
-        </div>
+          <p className="muted">{(appStatus || appFrom || appTo) ? 'No applications match this filter.' : 'No applications yet.'}</p>        </div>
       )}
       {shownJobs.map((job) => (
         <div key={job._id} className="card posting">
@@ -241,6 +252,7 @@ function RecruiterDashboard() {
               {salaryText(job) && <span className="tag">{salaryText(job)}</span>}
               {job.deadline && <span className="tag">Apply before {new Date(job.deadline).toLocaleDateString()}</span>}
               <span>{job.applicationCount} application{job.applicationCount === 1 ? '' : 's'}</span>
+              {statusSummary(job) && <span>{statusSummary(job)}</span>}
             </div>
           </div>
           <div className="posting-actions">
@@ -261,7 +273,7 @@ function RecruiterDashboard() {
                 <select
                   id={`app-status-${job._id}`}
                   value={appStatus}
-                  onChange={(e) => { setAppStatus(e.target.value); loadApplications(job._id, e.target.value, appSort) }}
+                  onChange={(e) => changeFilter(job, { status: e.target.value })}
                 >
                   <option value="">All</option>
                   <option value="Applied">Applied</option>
@@ -271,11 +283,27 @@ function RecruiterDashboard() {
                   <option value="Rejected">Rejected</option>
                   <option value="Withdrawn">Withdrawn</option>
                 </select>
+                <label htmlFor={`app-from-${job._id}`}>From</label>
+                <input
+                  id={`app-from-${job._id}`}
+                  type="date"
+                  value={appFrom}
+                  onChange={(e) => changeFilter(job, { from: e.target.value })}
+                  style={{ width: 'auto' }}
+                />
+                <label htmlFor={`app-to-${job._id}`}>To</label>
+                <input
+                  id={`app-to-${job._id}`}
+                  type="date"
+                  value={appTo}
+                  onChange={(e) => changeFilter(job, { to: e.target.value })}
+                  style={{ width: 'auto' }}
+                />
                 <label htmlFor={`app-sort-${job._id}`}>Sort by</label>
                 <select
                   id={`app-sort-${job._id}`}
                   value={appSort}
-                  onChange={(e) => { setAppSort(e.target.value); loadApplications(job._id, appStatus, e.target.value) }}
+                  onChange={(e) => changeFilter(job, { sort: e.target.value })}
                 >
                   <option value="newest">Newest first</option>
                   <option value="oldest">Oldest first</option>

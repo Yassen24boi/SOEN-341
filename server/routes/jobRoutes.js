@@ -193,7 +193,20 @@ router.get('/mine', requireAuth, requireRecruiter, async (req, res) => {
       { $group: { _id: '$job', count: { $sum: 1 } } }
     ])
     const countMap = Object.fromEntries(counts.map((c) => [String(c._id), c.count]))
-    res.json(jobs.map((j) => ({ ...j, applicationCount: countMap[String(j._id)] || 0 })))
+    const byStatus = await Application.aggregate([
+      { $match: { job: { $in: jobs.map((j) => j._id) } } },
+      { $group: { _id: { job: '$job', status: '$status' }, count: { $sum: 1 } } }
+    ])
+    const statusMap = {}
+    byStatus.forEach((c) => {
+      const key = String(c._id.job)
+      statusMap[key] = { ...(statusMap[key] || {}), [c._id.status]: c.count }
+    })
+    res.json(jobs.map((j) => ({
+      ...j,
+      applicationCount: countMap[String(j._id)] || 0,
+      statusCounts: statusMap[String(j._id)] || {}
+    })))
   } catch (err) {
     res.status(500).json({ message: 'Could not load postings' })
   }
@@ -239,10 +252,19 @@ router.get('/:id/applications', requireAuth, requireRecruiter, async (req, res) 
   try {
     const job = await getOwnedJob(req, res)
     if (!job) return
-    // Optional filter by status and sort order (US-22): ?status=Interview&sort=newest|oldest|name
     const filter = { job: job._id }
     const status = String(req.query.status || '')
     if (APPLICATION_STATUSES.includes(status)) filter.status = status
+    const range = {}
+    if (req.query.from) {
+      const from = new Date(`${req.query.from}T00:00:00`)
+      if (!Number.isNaN(from.getTime())) range.$gte = from
+    }
+    if (req.query.to) {
+      const to = new Date(`${req.query.to}T23:59:59.999`)
+      if (!Number.isNaN(to.getTime())) range.$lte = to
+    }
+    if (Object.keys(range).length) filter.createdAt = range
     const sort = String(req.query.sort || 'newest')
 
     const apps = await Application.find(filter)
