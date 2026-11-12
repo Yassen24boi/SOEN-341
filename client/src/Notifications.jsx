@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-
+import { Link } from 'react-router-dom'
 const API = 'http://localhost:5000/api/notifications'
 
 function Notifications() {
@@ -141,9 +141,27 @@ function Notifications() {
               }}
             >
               <p style={{ fontWeight: item.readAt ? 400 : 700 }}>
-                {!item.readAt && <span aria-label="Unread">● </span>}
-                {item.message}
+              {!item.readAt && <span aria-label="Unread">● </span>}
+              {item.message}
               </p>
+
+              {item.application && (
+              <Link
+              to={item.type === 'new_application'
+                ? '/recruiter'
+                : '/applications'}
+                className="btn small"
+                style={{
+                display: 'inline-block',
+                marginTop: 10,
+                marginBottom: 10
+                }}
+              >
+              {item.type === 'new_application'
+                ? 'View Applications'
+                : 'View My Application'}
+              </Link>
+            )}
 
               <p className="muted">
                 {new Date(item.createdAt).toLocaleString()}
