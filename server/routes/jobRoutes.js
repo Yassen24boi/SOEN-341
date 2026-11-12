@@ -20,11 +20,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: {fileSize: 10 * 1024 * 1024},
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = ['.pdf', '.doc', '.docx']
-    if (allowed.includes(path.extname(file.originalname).toLowerCase())){
-      cb(null,true)
+    if (allowed.includes(path.extname(file.originalname).toLowerCase())) {
+      cb(null, true)
     } else {
       cb(new Error('Only PDF, DOC or DOCX files are allowed'))
     }
@@ -207,24 +207,24 @@ router.post('/:id/apply', requireAuth, upload.single('coverLetterFile'), async (
     const { resumeFilename } = req.body
     const coverLetterFilename = req.file ? req.file.filename : null
 
-    const app = await Application.create({ 
-      job: job._id, 
-      applicant: req.userId, 
+    const app = await Application.create({
+      job: job._id,
+      applicant: req.userId,
       resumeFilename: resumeFilename || null,
       coverLetterFilename: coverLetterFilename
-      
+
     })
     try {
-     await Notification.create({ recipient: job.recruiter, type: 'new_application', message: `A new candidate applied to your "${job.title}" posting.`, application: app._id,job: job._id})
-} catch (notificationError) {
-  console.error('Could not create recruiter notification:', notificationError)
-}
+      await Notification.create({ recipient: job.recruiter, type: 'new_application', message: `A new candidate applied to your "${job.title}" posting.`, application: app._id, job: job._id })
+    } catch (notificationError) {
+      console.error('Could not create recruiter notification:', notificationError)
+    }
 
     const populatedApp = await Application.findById(app._id).populate('job', 'title')
 
     res.status(201).json({
-      _id:populatedApp._id,
-      jobTitle:populatedApp.job.title,
+      _id: populatedApp._id,
+      jobTitle: populatedApp.job.title,
       createdAt: populatedApp.createdAt,
       status: populatedApp.status,
       resumeFilename: populatedApp.resumeFilename,
@@ -239,7 +239,7 @@ router.get('/:id/applications', requireAuth, requireRecruiter, async (req, res) 
   try {
     const job = await getOwnedJob(req, res)
     if (!job) return
-        // Optional filter by status and sort order (US-22): ?status=Interview&sort=newest|oldest|name
+    // Optional filter by status and sort order (US-22): ?status=Interview&sort=newest|oldest|name
     const filter = { job: job._id }
     const status = String(req.query.status || '')
     if (APPLICATION_STATUSES.includes(status)) filter.status = status
@@ -312,6 +312,7 @@ router.patch('/:id/status', requireAuth, requireRecruiter, async (req, res) => {
       return res.status(400).json({ message: 'Status must be open, closed or archived' })
     }
     job.status = req.body.status
+    job.archivedAt = req.body.status === 'archived' ? new Date() : undefined
     await job.save()
     res.json(job)
   } catch (err) {
@@ -327,6 +328,34 @@ router.delete('/:id', requireAuth, requireRecruiter, async (req, res) => {
     res.json({ message: 'Posting deleted' })
   } catch (err) {
     res.status(500).json({ message: 'Could not delete posting' })
+  }
+})
+// US-21: archive and restore a posting (owner only)
+router.patch('/:id/archive', requireAuth, requireRecruiter, async (req, res) => {
+  try {
+    const job = await getOwnedJob(req, res)
+    if (!job) return
+    job.status = 'archived'
+    job.archivedAt = new Date()
+    await job.save()
+    res.json(job)
+  } catch (err) {
+    res.status(500).json({ message: 'Could not archive posting' })
+  }
+})
+router.patch('/:id/restore', requireAuth, requireRecruiter, async (req, res) => {
+  try {
+    const job = await getOwnedJob(req, res)
+    if (!job) return
+    if (job.status !== 'archived') {
+      return res.status(400).json({ message: 'Only archived postings can be restored' })
+    }
+    job.status = 'closed'
+    job.archivedAt = undefined
+    await job.save()
+    res.json(job)
+  } catch (err) {
+    res.status(500).json({ message: 'Could not restore posting' })
   }
 })
 
