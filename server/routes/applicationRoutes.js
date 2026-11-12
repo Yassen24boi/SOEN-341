@@ -3,7 +3,7 @@ const router = express.Router();
 const Application = require('../models/Application')
 const Job = require('../models/Job')
 const requireAuth = require('../middleware/auth')
-
+const Notification = require('../models/Notification')
 const VALID_STATUSES = ['Applied', 'Under Review', 'Interview', 'Offered', 'Rejected', 'Withdrawn'];
 
 // GET /api/applications (Matches /api/applications because of the router mount)
@@ -52,8 +52,24 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
     }
 
     // 4. Update and save the status
-    application.status = status;
-    await application.save();
+    const previousStatus = application.status;
+
+  application.status = status;
+  await application.save();
+
+  if (isRecruiter && !isApplicant && previousStatus !== status) {
+  try {
+    await Notification.create({
+      recipient: application.applicant,
+      type: 'application_status',
+      message: `Your application for "${job.title}" is now ${status}.`,
+      application: application._id,
+      job: job._id
+    });
+    } catch (err) {
+    console.error('Could not create application notification:', err);
+    }
+  }
 
     res.json({ message: 'Application status updated successfully', application });
   } catch (err) {

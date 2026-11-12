@@ -1,9 +1,40 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-
+import { useEffect, useState } from 'react'
 function Navbar() {
     const navigate = useNavigate()
     const token = localStorage.getItem('token')
     const role = localStorage.getItem('role')
+    const [unreadCount, setUnreadCount] = useState(0)
+
+useEffect(() => {
+    if (!token) return
+
+    let active = true
+
+    async function refreshCount() {
+        try {
+            const res = await fetch('http://localhost:5000/api/notifications', {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            if (!res.ok) return
+
+            const data = await res.json()
+            if (active) setUnreadCount(data.unreadCount)
+        } catch {
+            // Retry on the next refresh.
+        }
+    }
+
+    refreshCount()
+    const timer = setInterval(refreshCount, 15000)
+    window.addEventListener('notifications-updated', refreshCount)
+
+    return () => {
+        active = false
+        clearInterval(timer)
+        window.removeEventListener('notifications-updated', refreshCount)
+    }
+}, [token])
 
     const handleLogout = () => {
         localStorage.removeItem('token')
@@ -34,9 +65,12 @@ function Navbar() {
                         <>
                             <NavLink to={homePath} end className={linkClass}>Home</NavLink>
                             <NavLink to="/jobs" className={linkClass}>Jobs</NavLink>
-                            <NavLink to="/notifications" className={linkClass}>Notifications</NavLink>
-                        </>
-                    )}
+                           <NavLink to="/notifications" className={linkClass}>Notifications
+                            {unreadCount > 0 && (
+                             <span className="notification-badge">{unreadCount}</span>
+                             )}
+                            </NavLink> </>
+                            )}
                     {token && role == 'recruiter' && (
                         <NavLink to="/recruiter" className={linkClass}>Dashboard</NavLink>
                     )}

@@ -45,6 +45,7 @@ function Notifications() {
 
       const updated = await res.json()
       if (!res.ok) {
+        window.dispatchEvent(new Event('notifications-updated'))
         throw new Error(updated.message || 'Could not update notification')
       }
 
@@ -76,9 +77,9 @@ function Notifications() {
 
       const data = await res.json()
       if (!res.ok) {
-        throw new Error(data.message || 'Could not update notifications')
+        throw new Error(updated.message || 'Could not update notification')
       }
-
+      window.dispatchEvent(new Event('notifications-updated'))
       const now = new Date().toISOString()
       setNotifications(current =>
         current.map(item => ({
@@ -87,6 +88,7 @@ function Notifications() {
         }))
       )
       setUnreadCount(0)
+      window.dispatchEvent(new Event('notifications-updated'))
     } catch (err) {
       setError(err.message)
     }

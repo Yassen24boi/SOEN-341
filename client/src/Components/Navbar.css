@@ -6,3 +6,18 @@
 .navbar-links a:hover{background:var(--accent-soft);color:var(--accent-deep)}
 .navbar-links a.active{color:var(--ink);box-shadow:inset 0 -3px 0 var(--accent);border-radius:0}
 .navbar-spacer{flex:1}
+.notification-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    margin-left: 6px;
+    padding: 0 5px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: #b91c1c;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
