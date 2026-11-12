@@ -37,6 +37,8 @@ function RecruiterDashboard() {
   const [applicationsFor, setApplicationsFor] = useState(null)
   const [applications, setApplications] = useState([])
   const [tab, setTab] = useState('active')
+  const [appStatus, setAppStatus] = useState('')
+  const [appSort, setAppSort] = useState('newest')
 
   async function loadJobs() {
     const res = await fetch(`${API}/mine`, { headers })
@@ -108,12 +110,21 @@ function RecruiterDashboard() {
     loadJobs()
   }
 
-  async function viewApplications(job) {
-    const res = await fetch(`${API}/${job._id}/applications`, { headers })
+  async function loadApplications(jobId, status, sort) {
+    const params = new URLSearchParams()
+    if (status) params.set('status', status)
+    if (sort) params.set('sort', sort)
+    const res = await fetch(`${API}/${jobId}/applications?${params}`, { headers })
     const data = await res.json()
     if (!res.ok) return setMessage(data.message || 'Could not load applications')
     setApplications(data)
-    setApplicationsFor(job._id)
+    setApplicationsFor(jobId)
+  }
+
+  function viewApplications(job) {
+    setAppStatus('')
+    setAppSort('newest')
+    loadApplications(job._id, '', 'newest')
   }
 
   async function updateApplicationStatus(appId, newStatus) {
@@ -240,7 +251,35 @@ function RecruiterDashboard() {
           {applicationsFor === job._id && (
             <div style={{ marginTop: 14 }}>
               <h3>Applications</h3>
-              {applications.length === 0 && <p className="muted">No applications yet.</p>}
+              <div className="filter-row" style={{ margin: '8px 0 12px' }}>
+                <label htmlFor={`app-status-${job._id}`}>Filter by status</label>
+                <select
+                  id={`app-status-${job._id}`}
+                  value={appStatus}
+                  onChange={(e) => { setAppStatus(e.target.value); loadApplications(job._id, e.target.value, appSort) }}
+                >
+                  <option value="">All</option>
+                  <option value="Applied">Applied</option>
+                  <option value="Under Review">Under Review</option>
+                  <option value="Interview">Interview</option>
+                  <option value="Offered">Offered</option>
+                  <option value="Rejected">Rejected</option>
+                  <option value="Withdrawn">Withdrawn</option>
+                </select>
+                <label htmlFor={`app-sort-${job._id}`}>Sort by</label>
+                <select
+                  id={`app-sort-${job._id}`}
+                  value={appSort}
+                  onChange={(e) => { setAppSort(e.target.value); loadApplications(job._id, appStatus, e.target.value) }}
+                >
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="name">Applicant name</option>
+                </select>
+              </div>
+              {applications.length === 0 && (
+                <p className="muted">{appStatus ? 'No applications match this filter.' : 'No applications yet.'}</p>
+              )}
               {applications.map((a) => (
                 <div key={a._id} className="app-row">
                   <div><strong>{a.applicant?.name || a.applicant?.fullName || a.applicant?.email}</strong></div>
@@ -252,7 +291,7 @@ function RecruiterDashboard() {
                     <label htmlFor={`status-${a._id}`}>Status</label>
                     <select
                       id={`status-${a._id}`}
-                      value={a.status || 'Pending'}
+                      value={a.status || 'Applied'}
                       onChange={(e) => updateApplicationStatus(a._id, e.target.value)}
                     >
                       <option value="Applied">Applied</option>
@@ -260,6 +299,7 @@ function RecruiterDashboard() {
                       <option value="Interview">Interview</option>
                       <option value="Offered">Offered</option>
                       <option value="Rejected">Rejected</option>
+                      {a.status === 'Withdrawn' && <option value="Withdrawn" disabled>Withdrawn</option>}
                     </select>
                   </div>
 

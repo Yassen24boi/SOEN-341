@@ -31,6 +31,7 @@ const upload = multer({
 })
 
 const PAGE_SIZE = 10
+const APPLICATION_STATUSES = ['Applied', 'Under Review', 'Interview', 'Offered', 'Rejected', 'Withdrawn']
 
 // Turns characters like . or ( into plain text, so a search for "c++" doesn't break the query
 function escapeRegex(text) {
@@ -231,9 +232,18 @@ router.get('/:id/applications', requireAuth, requireRecruiter, async (req, res) 
   try {
     const job = await getOwnedJob(req, res)
     if (!job) return
-    const apps = await Application.find({ job: job._id })
-      .sort({ createdAt: -1 })
+        // Optional filter by status and sort order (US-22): ?status=Interview&sort=newest|oldest|name
+    const filter = { job: job._id }
+    const status = String(req.query.status || '')
+    if (APPLICATION_STATUSES.includes(status)) filter.status = status
+    const sort = String(req.query.sort || 'newest')
+
+    const apps = await Application.find(filter)
+      .sort({ createdAt: sort === 'oldest' ? 1 : -1 })
       .populate('applicant', '-password')
+    if (sort === 'name') {
+      apps.sort((a, b) => (a.applicant?.fullName || '').localeCompare(b.applicant?.fullName || ''))
+    }
     res.json(apps)
   } catch (err) {
     res.status(500).json({ message: 'Could not load applications' })

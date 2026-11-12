@@ -254,4 +254,76 @@ describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', (
         });
     });
 
+        describe('GET /api/jobs/:id/applications - Filter and sort (Sprint 3: US-22)', () => {
+        let sortJob;
+
+        beforeAll(async () => {
+            const res = await request(app).post('/api/jobs').set(auth(tokenA)).send(newJob({ title: 'Sort Me' }));
+            sortJob = res.body;
+
+            // Charlie applied first (oldest), then Alice, then Bob (newest)
+            const names = ['Charlie', 'Alice', 'Bob'];
+            const statuses = ['Applied', 'Interview', 'Applied'];
+            for (let i = 0; i < names.length; i++) {
+                const user = await User.create({
+                    fullName: names[i],
+                    email: `rec_${names[i]}_${RUN_ID}@example.com`,
+                    password: 'password123',
+                    role: 'jobseeker'
+                });
+                await Application.create({
+                    job: sortJob._id,
+                    applicant: user._id,
+                    status: statuses[i],
+                    createdAt: new Date(`2026-01-0${i + 1}T12:00:00Z`)
+                });
+            }
+        });
+
+        const names = (res) => res.body.map((a) => a.applicant.fullName);
+
+        it('should return only the applications with the chosen status (AT-22.1)', async () => {
+            const res = await request(app)
+                .get(`/api/jobs/${sortJob._id}/applications?status=Interview`)
+                .set(auth(tokenA));
+
+            expect(res.statusCode).toEqual(200);
+            expect(names(res)).toEqual(['Alice']);
+        });
+
+        it('should return an empty list when no application has that status (AT-22.2)', async () => {
+            const res = await request(app)
+                .get(`/api/jobs/${sortJob._id}/applications?status=Offered`)
+                .set(auth(tokenA));
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body).toHaveLength(0);
+        });
+
+        it('should sort newest first by default and oldest first on request (AT-22.3)', async () => {
+            const newest = await request(app).get(`/api/jobs/${sortJob._id}/applications`).set(auth(tokenA));
+            const oldest = await request(app).get(`/api/jobs/${sortJob._id}/applications?sort=oldest`).set(auth(tokenA));
+
+            expect(names(newest)).toEqual(['Bob', 'Alice', 'Charlie']);
+            expect(names(oldest)).toEqual(['Charlie', 'Alice', 'Bob']);
+        });
+
+        it('should sort by applicant name (AT-22.4)', async () => {
+            const res = await request(app)
+                .get(`/api/jobs/${sortJob._id}/applications?sort=name`)
+                .set(auth(tokenA));
+
+            expect(names(res)).toEqual(['Alice', 'Bob', 'Charlie']);
+        });
+
+        it('should ignore an invalid status or sort value and return the default list (AT-22.5)', async () => {
+            const res = await request(app)
+                .get(`/api/jobs/${sortJob._id}/applications?status=banana&sort=nonsense`)
+                .set(auth(tokenA));
+
+            expect(res.statusCode).toEqual(200);
+            expect(names(res)).toEqual(['Bob', 'Alice', 'Charlie']);
+        });
+    });
+
 });
