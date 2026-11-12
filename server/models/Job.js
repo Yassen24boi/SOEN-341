@@ -3,8 +3,8 @@ const mongoose = require('mongoose')
 const JOB_CATEGORIES = ['Software', 'Data', 'Design', 'Marketing', 'Finance', 'Other']
 
 const jobSchema = new mongoose.Schema(
-    {
-      recruiter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  {
+    recruiter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true, trim: true },
     company: { type: String, required: true, trim: true },
     location: { type: String, default: '', trim: true },
@@ -16,10 +16,11 @@ const jobSchema = new mongoose.Schema(
     description: { type: String, required: true },
     requirements: { type: String, default: '' },
     deadline: { type: Date },
-    status: { type: String, enum: ['open', 'closed', 'archived'], default: 'open' }
+    status: { type: String, enum: ['open', 'closed', 'archived'], default: 'open' },
+    archivedAt: { type: Date }
   },
   { timestamps: true }
-)  
+)
 module.exports = mongoose.model('Job', jobSchema)
 module.exports.JOB_CATEGORIES = JOB_CATEGORIES
 

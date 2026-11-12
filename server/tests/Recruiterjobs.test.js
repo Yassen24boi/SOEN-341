@@ -252,9 +252,41 @@ describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', (
             expect(res.statusCode).toEqual(403);
             expect((await Job.findById(archiveJob._id)).status).toBe('closed');
         });
+
+        it('should archive and restore through the dedicated endpoints (AT-21.5)', async () => {
+            const archived = await request(app).patch(`/api/jobs/${archiveJob._id}/archive`).set(auth(tokenA));
+            expect(archived.statusCode).toEqual(200);
+            expect(archived.body).toHaveProperty('status', 'archived');
+            expect(archived.body.archivedAt).toBeTruthy();
+
+            const restored = await request(app).patch(`/api/jobs/${archiveJob._id}/restore`).set(auth(tokenA));
+            expect(restored.statusCode).toEqual(200);
+            expect(restored.body).toHaveProperty('status', 'closed');
+            expect(restored.body.archivedAt).toBeFalsy();
+        });
+
+        it('should keep the applications of an archived posting readable (AT-21.6)', async () => {
+            await Application.create({ job: archiveJob._id, applicant: seeker._id });
+            await request(app).patch(`/api/jobs/${archiveJob._id}/archive`).set(auth(tokenA));
+            const res = await request(app).get(`/api/jobs/${archiveJob._id}/applications`).set(auth(tokenA));
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body).toHaveLength(1);
+        });
+
+        it('should only let the owner archive or restore, and only restore archived postings (AT-21.7)', async () => {
+            const archiveOther = await request(app).patch(`/api/jobs/${archiveJob._id}/archive`).set(auth(tokenB));
+            const restoreOther = await request(app).patch(`/api/jobs/${archiveJob._id}/restore`).set(auth(tokenB));
+            await request(app).patch(`/api/jobs/${archiveJob._id}/restore`).set(auth(tokenA));
+            const restoreOpen = await request(app).patch(`/api/jobs/${archiveJob._id}/restore`).set(auth(tokenA));
+
+            expect(archiveOther.statusCode).toEqual(403);
+            expect(restoreOther.statusCode).toEqual(403);
+            expect(restoreOpen.statusCode).toEqual(400);
+        });
     });
 
-        describe('GET /api/jobs/:id/applications - Filter and sort (Sprint 3: US-22)', () => {
+    describe('GET /api/jobs/:id/applications - Filter and sort (Sprint 3: US-22)', () => {
         let sortJob;
 
         beforeAll(async () => {

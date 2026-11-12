@@ -92,6 +92,11 @@ function RecruiterDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  async function archiveOrRestore(job, action) {
+    await fetch(`${API}/${job._id}/${action}`, { method: 'PATCH', headers })
+    loadJobs()
+  }
+
   async function setStatus(job, status) {
     await fetch(`${API}/${job._id}/status`, { method: 'PATCH', headers, body: JSON.stringify({ status }) })
     loadJobs()
@@ -243,8 +248,8 @@ function RecruiterDashboard() {
             {job.status !== 'archived' && <button className="btn small" onClick={() => toggleStatus(job)}>{job.status === 'open' ? 'Close' : 'Reopen'}</button>}
             <button className="btn small" onClick={() => viewApplications(job)}>View applications</button>
             {job.status === 'archived'
-              ? <button className="btn small" onClick={() => setStatus(job, 'closed')}>Restore</button>
-              : <button className="btn small" onClick={() => setStatus(job, 'archived')}>Archive</button>}
+              ? <button className="btn small" onClick={() => archiveOrRestore(job, 'restore')}>Restore</button>
+              : <button className="btn small" onClick={() => archiveOrRestore(job, 'archive')}>Archive</button>}
             <button className="btn small danger" onClick={() => deleteJob(job)}>Delete</button>
           </div>
 
