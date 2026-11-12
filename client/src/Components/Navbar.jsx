@@ -15,8 +15,7 @@ function Navbar() {
     const linkClass = ({ isActive }) => (isActive ? 'active' : undefined)
 
     // Logged out: login page. Job seekers: their applications. Recruiters: the job list.
-    const homePath = !token ? '/login' : role == 'jobseeker' ? '/applications' : '/'
-
+    const homePath = !token ? '/login' : role == 'jobseeker' ? '/applications' : role == 'recruiter' ? '/recruiter' : '/'
     return (
         <nav className="navbar" aria-label="Main">
             <div className="navbar-inner">
