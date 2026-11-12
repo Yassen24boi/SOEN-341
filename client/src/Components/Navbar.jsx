@@ -33,6 +33,7 @@ function Navbar() {
                         <>
                             <NavLink to={homePath} end className={linkClass}>Home</NavLink>
                             <NavLink to="/jobs" className={linkClass}>Jobs</NavLink>
+                            <NavLink to="/notifications" className={linkClass}>Notifications</NavLink>
                         </>
                     )}
                     {token && role == 'recruiter' && (
