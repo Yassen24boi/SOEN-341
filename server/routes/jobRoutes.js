@@ -291,8 +291,8 @@ router.patch('/:id/status', requireAuth, requireRecruiter, async (req, res) => {
   try {
     const job = await getOwnedJob(req, res)
     if (!job) return
-    if (!['open', 'closed'].includes(req.body.status)) {
-      return res.status(400).json({ message: 'Status must be open or closed' })
+    if (!['open', 'closed', 'archived'].includes(req.body.status)) {
+      return res.status(400).json({ message: 'Status must be open, closed or archived' })
     }
     job.status = req.body.status
     await job.save()

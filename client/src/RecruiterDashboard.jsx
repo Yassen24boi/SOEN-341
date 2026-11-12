@@ -36,6 +36,7 @@ function RecruiterDashboard() {
   const [message, setMessage] = useState('')
   const [applicationsFor, setApplicationsFor] = useState(null)
   const [applications, setApplications] = useState([])
+  const [tab, setTab] = useState('active')
 
   async function loadJobs() {
     const res = await fetch(`${API}/mine`, { headers })
@@ -89,6 +90,11 @@ function RecruiterDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  async function setStatus(job, status) {
+    await fetch(`${API}/${job._id}/status`, { method: 'PATCH', headers, body: JSON.stringify({ status }) })
+    loadJobs()
+  }
+
   async function toggleStatus(job) {
     const status = job.status === 'open' ? 'closed' : 'open'
     await fetch(`${API}/${job._id}/status`, { method: 'PATCH', headers, body: JSON.stringify({ status }) })
@@ -110,15 +116,15 @@ function RecruiterDashboard() {
     setApplicationsFor(job._id)
   }
 
-  async function updateApplicationStatus(appId, newStatus){
-    try{
+  async function updateApplicationStatus(appId, newStatus) {
+    try {
       const res = await fetch(`http://localhost:5000/api/applications/${appId}/status`, {
         method: 'PATCH',
         headers,
-        body: JSON.stringify({status: newStatus})
+        body: JSON.stringify({ status: newStatus })
       })
       const data = await res.json()
-      if(!res.ok){
+      if (!res.ok) {
         alert(data.message || 'Failed to update application status')
         return
       }
@@ -133,8 +139,11 @@ function RecruiterDashboard() {
     }
   }
 
+  const activeJobs = jobs.filter((j) => j.status !== 'archived')
+  const archivedJobs = jobs.filter((j) => j.status === 'archived')
+  const shownJobs = tab === 'archived' ? archivedJobs : activeJobs
   const openCount = jobs.filter((j) => j.status === 'open').length
-  const totalApps = jobs.reduce((n, j) => n + (j.applicationCount || 0), 0)
+  const totalApps = activeJobs.reduce((n, j) => n + (j.applicationCount || 0), 0)
 
   return (
     <div className="page">
@@ -143,7 +152,7 @@ function RecruiterDashboard() {
 
       {/* Summary tiles */}
       <div className="facts" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' }}>
-        <div><small>Postings</small><b style={{ fontSize: 28 }}>{jobs.length}</b></div>
+        <div><small>Postings</small><b style={{ fontSize: 28 }}>{activeJobs.length}</b></div>
         <div><small>Open</small><b style={{ fontSize: 28 }}>{openCount}</b></div>
         <div><small>Applications</small><b style={{ fontSize: 28 }}>{totalApps}</b></div>
       </div>
@@ -190,12 +199,20 @@ function RecruiterDashboard() {
       {message && <p className="notice" role="status">{message}</p>}
 
       <h2>My postings</h2>
-      {jobs.length === 0 && (
+      <div className="posting-actions" style={{ marginBottom: 12 }}>
+        <button type="button" className={`btn small ${tab === 'active' ? 'primary' : ''}`} onClick={() => setTab('active')}>
+          Active ({activeJobs.length})
+        </button>
+        <button type="button" className={`btn small ${tab === 'archived' ? 'primary' : ''}`} onClick={() => setTab('archived')}>
+          Archived ({archivedJobs.length})
+        </button>
+      </div>
+      {shownJobs.length === 0 && (
         <div className="card" style={{ padding: 28, textAlign: 'center' }}>
-          <p className="muted">No postings yet. Create your first one above.</p>
+          <p className="muted">{tab === 'archived' ? 'No archived postings.' : 'No postings yet. Create your first one above.'}</p>
         </div>
       )}
-      {jobs.map((job) => (
+      {shownJobs.map((job) => (
         <div key={job._id} className="card posting">
           <div className="posting-head">
             <div>
@@ -203,7 +220,7 @@ function RecruiterDashboard() {
               <div className="job-co">{job.company}{job.location && ` · ${job.location}`}</div>
             </div>
             <div className="job-meta">
-              <span className={`pill ${job.status === 'open' ? 'good' : 'plain'}`}>{job.status === 'open' ? 'Open' : 'Closed'}</span>
+              <span className={`pill ${job.status === 'open' ? 'good' : 'plain'}`}>{job.status === 'open' ? 'Open' : job.status === 'archived' ? 'Archived' : 'Closed'}</span>
               <span className="tag">{job.type}</span>
               {salaryText(job) && <span className="tag">{salaryText(job)}</span>}
               {job.deadline && <span className="tag">Apply before {new Date(job.deadline).toLocaleDateString()}</span>}
@@ -211,9 +228,12 @@ function RecruiterDashboard() {
             </div>
           </div>
           <div className="posting-actions">
-            <button className="btn small" onClick={() => startEdit(job)}>Edit</button>
-            <button className="btn small" onClick={() => toggleStatus(job)}>{job.status === 'open' ? 'Close' : 'Reopen'}</button>
+            {job.status !== 'archived' && <button className="btn small" onClick={() => startEdit(job)}>Edit</button>}
+            {job.status !== 'archived' && <button className="btn small" onClick={() => toggleStatus(job)}>{job.status === 'open' ? 'Close' : 'Reopen'}</button>}
             <button className="btn small" onClick={() => viewApplications(job)}>View applications</button>
+            {job.status === 'archived'
+              ? <button className="btn small" onClick={() => setStatus(job, 'closed')}>Restore</button>
+              : <button className="btn small" onClick={() => setStatus(job, 'archived')}>Archive</button>}
             <button className="btn small danger" onClick={() => deleteJob(job)}>Delete</button>
           </div>
 

@@ -201,4 +201,57 @@ describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', (
             expect(res.statusCode).toEqual(404);
         });
     });
+    describe('PATCH /api/jobs/:id/status - Archive and restore (Sprint 3: US-21)', () => {
+        let archiveJob;
+
+        beforeAll(async () => {
+            const res = await request(app).post('/api/jobs').set(auth(tokenA)).send(newJob({ title: 'Archive Me' }));
+            archiveJob = res.body;
+        });
+
+        it('should let the owner archive a posting and keep it in their own list (AT-21.1)', async () => {
+            const res = await request(app)
+                .patch(`/api/jobs/${archiveJob._id}/status`)
+                .set(auth(tokenA))
+                .send({ status: 'archived' });
+            const mine = await request(app).get('/api/jobs/mine').set(auth(tokenA));
+            const found = mine.body.find((j) => j._id === archiveJob._id);
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body).toHaveProperty('status', 'archived');
+            expect(found).toHaveProperty('status', 'archived');
+        });
+
+        it('should hide an archived posting from job seekers and block new applications (AT-21.2)', async () => {
+            const list = await request(app).get(`/api/jobs?location=${CITY}`);
+            const apply = await request(app)
+                .post(`/api/jobs/${archiveJob._id}/apply`)
+                .set(auth(seekerToken))
+                .send({ resumeFilename: 'cv.pdf' });
+
+            expect(list.body.jobs.map((j) => j._id)).not.toContain(archiveJob._id);
+            expect(apply.statusCode).toEqual(404);
+        });
+
+        it('should restore an archived posting as closed (AT-21.3)', async () => {
+            const res = await request(app)
+                .patch(`/api/jobs/${archiveJob._id}/status`)
+                .set(auth(tokenA))
+                .send({ status: 'closed' });
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body).toHaveProperty('status', 'closed');
+        });
+
+        it("should not let another recruiter archive someone else's posting (AT-21.4)", async () => {
+            const res = await request(app)
+                .patch(`/api/jobs/${archiveJob._id}/status`)
+                .set(auth(tokenB))
+                .send({ status: 'archived' });
+
+            expect(res.statusCode).toEqual(403);
+            expect((await Job.findById(archiveJob._id)).status).toBe('closed');
+        });
+    });
+
 });
