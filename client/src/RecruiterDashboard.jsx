@@ -99,6 +99,14 @@ function RecruiterDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  function startCreate() {
+    setEditingId(null)
+    setForm(emptyForm)
+    document.getElementById('create-form')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  <h2 id="create-form">{editingId ? 'Edit posting' : 'Create a job posting'}</h2>
+  
   async function archiveOrRestore(job, action) {
     await fetch(`${API}/${job._id}/${action}`, { method: 'PATCH', headers })
     loadJobs()
@@ -237,7 +245,11 @@ function RecruiterDashboard() {
       </div>
       {shownJobs.length === 0 && (
         <div className="card" style={{ padding: 28, textAlign: 'center' }}>
-          <p className="muted">{(appStatus || appFrom || appTo) ? 'No applications match this filter.' : 'No applications yet.'}</p>        </div>
+          <p className="muted">{tab === 'archived' ? 'No archived postings.' : 'No postings yet.'}</p>
+          {tab === 'active' && (
+            <button type="button" className="btn primary" onClick={startCreate}>Create posting</button>
+          )}
+        </div>
       )}
       {shownJobs.map((job) => (
         <div key={job._id} className="card posting">
@@ -311,8 +323,7 @@ function RecruiterDashboard() {
                 </select>
               </div>
               {applications.length === 0 && (
-                <p className="muted">{appStatus ? 'No applications match this filter.' : 'No applications yet.'}</p>
-              )}
+<p className="muted">{(appStatus || appFrom || appTo) ? 'No applications match this filter.' : 'No applications yet.'}</p>              )}
               {applications.map((a) => (
                 <div key={a._id} className="app-row">
                   <div><strong>{a.applicant?.name || a.applicant?.fullName || a.applicant?.email}</strong></div>
