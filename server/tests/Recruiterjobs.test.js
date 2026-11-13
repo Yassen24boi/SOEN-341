@@ -185,6 +185,8 @@ describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', (
             expect(res.body).toHaveLength(1);
             expect(res.body[0].applicant).toHaveProperty('fullName', 'Seeker');
             expect(res.body[0].applicant).not.toHaveProperty('password');
+            expect(res.body[0]).toHaveProperty('status', 'Applied');   // <- add
+            expect(res.body[0]).toHaveProperty('createdAt');           // <- add
         });
 
         it("should not show applications for another recruiter's posting (AT-19.2)", async () => {
@@ -400,4 +402,4 @@ describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', (
         });
     });
 
-});
+}); 
