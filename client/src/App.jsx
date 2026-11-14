@@ -7,6 +7,7 @@ import JobList from './JobList'
 import JobDetails from './JobDetails'
 import Applications from './Applications'
 import './App.css'
+import RecruiterHome from './RecruiterHome'
 import RecruiterDashboard from './RecruiterDashboard'
 import Navbar from "./Components/Navbar"
 import './Components/Navbar.css'
@@ -22,7 +23,8 @@ function App() {
         <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
         <Route path="/login" element={<Login />} />
         <Route path="/create-account" element={<CreateAccount />} />
-        <Route path="/recruiter" element={<RequireAuth><RecruiterDashboard /></RequireAuth>} />
+        <Route path="/recruiter" element={<RequireAuth><RecruiterHome /></RequireAuth>} />
+        <Route path="/recruiter/post" element={<RequireAuth><RecruiterDashboard /></RequireAuth>} />
         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/profile/edit" element={<RequireAuth><EditProfile /></RequireAuth>} />
         <Route path="/applications" element={<RequireAuth><Applications /></RequireAuth>} />
