@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 const API = 'http://localhost:5000/api/jobs'
 const emptyForm = {
-  title: '', company: '', location: '', type: 'full-time', description: '',
+  title: '', company: '', location: '', type: 'full-time', category: '', description: '', requirements: '',
   salaryPeriod: 'yearly', salaryMin: '', salaryMax: '', deadline: ''
 }
 
@@ -21,7 +21,9 @@ function formFromJob(job) {
     company: job.company,
     location: job.location || '',
     type: job.type,
+    category: job.category || '',
     description: job.description,
+    requirements: job.requirements || '',
     salaryPeriod: job.salaryPeriod || 'yearly',
     salaryMin: job.salaryMin ?? '',
     salaryMax: job.salaryMax ?? '',
@@ -40,10 +42,15 @@ function RecruiterDashboard() {
   const editingId = editingJob ? editingJob._id : null
 
   const [form, setForm] = useState(editingJob ? formFromJob(editingJob) : emptyForm)
+  const [categories, setCategories] = useState([])
   const [message, setMessage] = useState('')
 
   useEffect(() => {
     if (!token) navigate('/login')
+    fetch(`${API}/filters`)
+      .then((res) => res.json())
+      .then((data) => setCategories(data.categories || []))
+      .catch(() => {})
     // eslint-disable-next-line
   }, [])
 
@@ -85,6 +92,12 @@ function RecruiterDashboard() {
           </select>
         </div>
         <div className="row">
+          <select name="category" aria-label="Category" value={form.category} onChange={handleChange} style={{ flex: '1 1 220px', width: 'auto' }}>
+            <option value="">Category (optional)</option>
+            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div className="row">
           <select name="salaryPeriod" aria-label="Pay type" value={form.salaryPeriod} onChange={handleChange} style={{ flex: '1 1 180px', width: 'auto' }}>
             <option value="yearly">Yearly salary</option>
             <option value="hourly">Hourly wage</option>
@@ -99,6 +112,7 @@ function RecruiterDashboard() {
           </div>
         </div>
         <textarea name="description" aria-label="Description" placeholder="Description" rows={5} value={form.description} onChange={handleChange} required />
+        <textarea name="requirements" aria-label="Requirements" placeholder="Requirements (optional)" rows={4} value={form.requirements} onChange={handleChange} />
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="submit" className="btn primary">{editingId ? 'Save changes' : 'Post job'}</button>
           <button type="button" className="btn" onClick={() => navigate('/recruiter')}>Cancel</button>

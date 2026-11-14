@@ -12,6 +12,11 @@ jest.setTimeout(30000);
 // Unique values per run so the shared database is never affected by other runs or teammates
 const RUN_ID = Date.now();
 const CITY = `RecruiterCity-${RUN_ID}`;
+const FUTURE_DATE = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 1);
+    return d.toISOString().slice(0, 10);
+})();
 
 describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', () => {
     let recruiterA, recruiterB, seeker;
@@ -91,6 +96,46 @@ describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', (
 
             expect(res.statusCode).toEqual(401);
         });
+
+                it('should reject a deadline in the past and create nothing (AT-16.3)', async () => {
+            const title = `Past Deadline ${RUN_ID}`;
+            const res = await request(app)
+                .post('/api/jobs')
+                .set(auth(tokenA))
+                .send(newJob({ title, deadline: '2020-01-01' }));
+
+            expect(res.statusCode).toEqual(400);
+            expect(res.body.message).toBe('Deadline must be a future date.');
+            expect(await Job.countDocuments({ title })).toBe(0);
+        });
+
+        it('should accept a deadline in the future (AT-16.4)', async () => {
+            const res = await request(app)
+                .post('/api/jobs')
+                .set(auth(tokenA))
+                .send(newJob({ title: 'Future Deadline', deadline: FUTURE_DATE }));
+
+            expect(res.statusCode).toEqual(201);
+            expect(res.body.deadline).toBeTruthy();
+        });
+
+        it('should save category and requirements and reject an unknown category (AT-16.5)', async () => {
+            const category = Job.JOB_CATEGORIES[0];
+            const ok = await request(app)
+                .post('/api/jobs')
+                .set(auth(tokenA))
+                .send(newJob({ title: 'With Extras', category, requirements: 'Node.js and MongoDB' }));
+            const bad = await request(app)
+                .post('/api/jobs')
+                .set(auth(tokenA))
+                .send(newJob({ category: 'banana' }));
+
+            expect(ok.statusCode).toEqual(201);
+            expect(ok.body).toHaveProperty('category', category);
+            expect(ok.body).toHaveProperty('requirements', 'Node.js and MongoDB');
+            expect(bad.statusCode).toEqual(400);
+        });
+        
     });
 
     describe('PUT / PATCH / DELETE /api/jobs/:id - Edit, close or delete (US-17)', () => {
@@ -150,6 +195,48 @@ describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', (
             expect(await Job.findById(created.body._id)).toBeNull();
             expect(await Application.countDocuments({ job: created.body._id })).toBe(0);
         });
+
+                it('should show a changed salary on the job details endpoint (AT-17.5)', async () => {
+            const edit = await request(app)
+                .put(`/api/jobs/${jobA._id}`)
+                .set(auth(tokenA))
+                .send({ salaryMin: 70000, salaryMax: 90000, salaryPeriod: 'yearly' });
+            const details = await request(app).get(`/api/jobs/${jobA._id}`);
+
+            expect(edit.statusCode).toEqual(200);
+            expect(details.body).toHaveProperty('salaryMin', 70000);
+            expect(details.body).toHaveProperty('salaryMax', 90000);
+        });
+
+        it('should reject a past deadline when editing but allow saving an unchanged one (AT-17.6)', async () => {
+            const created = await request(app)
+                .post('/api/jobs')
+                .set(auth(tokenA))
+                .send(newJob({ title: 'Deadline Edit', deadline: FUTURE_DATE }));
+            const same = await request(app)
+                .put(`/api/jobs/${created.body._id}`)
+                .set(auth(tokenA))
+                .send({ title: 'Deadline Edit 2', deadline: FUTURE_DATE });
+            const past = await request(app)
+                .put(`/api/jobs/${created.body._id}`)
+                .set(auth(tokenA))
+                .send({ deadline: '2020-01-01' });
+
+            expect(same.statusCode).toEqual(200);
+            expect(past.statusCode).toEqual(400);
+            expect(past.body.message).toBe('Deadline must be a future date.');
+        });
+
+        it('should let only the owner close a posting through the close endpoint (AT-17.7)', async () => {
+            const created = await request(app).post('/api/jobs').set(auth(tokenA)).send(newJob({ title: 'To Close' }));
+            const other = await request(app).patch(`/api/jobs/${created.body._id}/close`).set(auth(tokenB));
+            const owner = await request(app).patch(`/api/jobs/${created.body._id}/close`).set(auth(tokenA));
+
+            expect(other.statusCode).toEqual(403);
+            expect(owner.statusCode).toEqual(200);
+            expect(owner.body).toHaveProperty('status', 'closed');
+        });
+
     });
 
     describe('GET /api/jobs/mine - Recruiter dashboard (US-18)', () => {
@@ -185,8 +272,8 @@ describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', (
             expect(res.body).toHaveLength(1);
             expect(res.body[0].applicant).toHaveProperty('fullName', 'Seeker');
             expect(res.body[0].applicant).not.toHaveProperty('password');
-            expect(res.body[0]).toHaveProperty('status', 'Applied');   // <- add
-            expect(res.body[0]).toHaveProperty('createdAt');           // <- add
+            expect(res.body[0]).toHaveProperty('status', 'Applied'); 
+            expect(res.body[0]).toHaveProperty('createdAt');          
         });
 
         it("should not show applications for another recruiter's posting (AT-19.2)", async () => {

@@ -157,12 +157,35 @@ function readSalary(body) {
 
 // Reads the optional deadline (a date like 2026-11-15). The posting stays open until the end of that day.
 // An empty value means "no deadline", so it clears the field.
-function readDeadline(body) {
+// A new or changed deadline must be in the future. Re-saving the same deadline is always allowed
+// (so editing an old posting doesn't fail just because its deadline has passed).
+function readDeadline(body, existingDeadline) {
   if (body.deadline === undefined) return { values: {} }
   if (body.deadline === null || body.deadline === '') return { values: { deadline: undefined } }
   const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(body.deadline) ? `${body.deadline}T23:59:59` : body.deadline)
   if (Number.isNaN(date.getTime())) return { error: 'Deadline must be a valid date' }
+  const unchanged = existingDeadline && date.getTime() === new Date(existingDeadline).getTime()
+  if (!unchanged && date.getTime() <= Date.now()) return { error: 'Deadline must be a future date.' }
   return { values: { deadline: date } }
+}
+
+// Reads the optional category (must be one of the known categories) and requirements text.
+// An empty value clears the field.
+function readExtras(body) {
+  const values = {}
+  if (body.category !== undefined) {
+    if (body.category === null || body.category === '') {
+      values.category = undefined
+    } else if (!Job.JOB_CATEGORIES.includes(body.category)) {
+      return { error: 'Category is not valid' }
+    } else {
+      values.category = body.category
+    }
+  }
+  if (body.requirements !== undefined) {
+    values.requirements = String(body.requirements ?? '').trim() || undefined
+  }
+  return { values }
 }
 
 router.post('/', requireAuth, requireRecruiter, async (req, res) => {
@@ -179,7 +202,9 @@ router.post('/', requireAuth, requireRecruiter, async (req, res) => {
     }
     const deadline = readDeadline(req.body)
     if (deadline.error) return res.status(400).json({ message: deadline.error })
-    const job = await Job.create({ recruiter: req.userId, title, company, location, type, description, ...salary.values, ...deadline.values })
+    const extras = readExtras(req.body)
+    if (extras.error) return res.status(400).json({ message: extras.error })
+    const job = await Job.create({ recruiter: req.userId, title, company, location, type, description, ...salary.values, ...deadline.values, ...extras.values })
     res.status(201).json(job)
   } catch (err) {
     res.status(500).json({ message: 'Could not create posting' })
@@ -314,9 +339,12 @@ router.put('/:id', requireAuth, requireRecruiter, async (req, res) => {
     const salary = readSalary(req.body)
     if (salary.error) return res.status(400).json({ message: salary.error })
     Object.assign(job, salary.values)
-    const deadline = readDeadline(req.body)
+    const deadline = readDeadline(req.body, job.deadline)
     if (deadline.error) return res.status(400).json({ message: deadline.error })
     Object.assign(job, deadline.values)
+    const extras = readExtras(req.body)
+    if (extras.error) return res.status(400).json({ message: extras.error })
+    Object.assign(job, extras.values)
     if (job.salaryMin !== undefined && job.salaryMax !== undefined && job.salaryMin > job.salaryMax) {
       return res.status(400).json({ message: 'Minimum salary cannot be higher than the maximum' })
     }
@@ -339,6 +367,19 @@ router.patch('/:id/status', requireAuth, requireRecruiter, async (req, res) => {
     res.json(job)
   } catch (err) {
     res.status(500).json({ message: 'Could not change status' })
+  }
+})
+// US-17: close a posting (owner only)
+router.patch('/:id/close', requireAuth, requireRecruiter, async (req, res) => {
+  try {
+    const job = await getOwnedJob(req, res)
+    if (!job) return
+    job.status = 'closed'
+    job.archivedAt = undefined
+    await job.save()
+    res.json(job)
+  } catch (err) {
+    res.status(500).json({ message: 'Could not close posting' })
   }
 })
 router.delete('/:id', requireAuth, requireRecruiter, async (req, res) => {
