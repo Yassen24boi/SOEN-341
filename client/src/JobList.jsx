@@ -168,6 +168,7 @@ function JobList() {
           <div className="job-meta">
             <span className="pill good">{formatType(job.type)}</span>
             {job.category && <span className="tag">{job.category}</span>}
+            {job.salaryMin || job.salaryMax ? <span>{salaryText(job)}</span> : null}
             <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
           </div>
         </Link>
