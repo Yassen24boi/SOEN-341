@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import ResumeFeedback from "./Components/ResumeFeedback"
 
 function Profile() {
   const [profile, setProfile] = useState(null)
@@ -349,6 +350,7 @@ async function handleDownloadResume(filename, label) {
                     Delete
                   </button>
                 </div>
+                <ResumeFeedback resumeId={cv._id} />
               </div>
             ))}
           </div>
