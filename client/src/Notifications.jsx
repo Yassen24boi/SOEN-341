@@ -77,7 +77,7 @@ function Notifications() {
 
       const data = await res.json()
       if (!res.ok) {
-        throw new Error(updated.message || 'Could not update notification')
+        throw new Error(data.message || 'Could not update notification')
       }
       window.dispatchEvent(new Event('notifications-updated'))
       const now = new Date().toISOString()
