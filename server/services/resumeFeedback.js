@@ -1,8 +1,5 @@
 // US-33: AI resume feedback using a free local model run by Ollama (https://ollama.com).
-// Ollama must be running on the same computer as the server, with the model downloaded.
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434'
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:7b'
-const TIMEOUT_MS = 30000
+const { askOllama } = require('./ollamaClient')
 
 // The shape the AI must answer in (Task 33.3). Ollama forces the reply to match it.
 const FEEDBACK_SCHEMA = {
@@ -34,37 +31,10 @@ function isListOfText(value) {
   return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 
-// Sends one chat request to Ollama and returns the text of its answer.
-// Tests replace this with a fake, so they never need Ollama running.
-async function askOllama(systemPrompt, userMessage) {
-  const res = await fetch(`${OLLAMA_URL}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: OLLAMA_MODEL,
-      stream: false,
-      format: FEEDBACK_SCHEMA,
-      // Low temperature keeps the feedback focused and consistent
-      options: { temperature: 0.2 },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage }
-      ]
-    }),
-    // Task 33.4: give up after 30 seconds
-    signal: AbortSignal.timeout(TIMEOUT_MS)
-  })
-  if (!res.ok) {
-    throw new AIFeedbackError(`Ollama returned status ${res.status}`)
-  }
-  const data = await res.json()
-  return data.message?.content || ''
-}
-
 // US-33: asks the AI for feedback on a CV's text.
 // `ask` can be swapped for a fake in tests.
 async function getResumeFeedback(resumeText, ask = askOllama) {
-  const answer = await ask(SYSTEM_PROMPT, `<cv>\n${resumeText}\n</cv>`)
+  const answer = await ask(SYSTEM_PROMPT, `<cv>\n${resumeText}\n</cv>`, FEEDBACK_SCHEMA)
 
   let feedback
   try {
@@ -81,4 +51,4 @@ async function getResumeFeedback(resumeText, ask = askOllama) {
   return { strengths, weaknesses, suggestions: suggestions.slice(0, 5) }
 }
 
-module.exports = { getResumeFeedback, askOllama, AIFeedbackError }
+module.exports = { getResumeFeedback, AIFeedbackError }
