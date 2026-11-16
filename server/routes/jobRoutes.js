@@ -4,6 +4,9 @@ const User = require('../models/User')
 const Job = require('../models/Job')
 const Application = require('../models/Application')
 const Notification = require('../models/Notification')
+const Profile = require('../models/Profile')
+const { extractResumeText } = require('../services/resumeText')
+const { buildProfileSummary, recommendJobs } = require('../services/jobMatching')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const router = express.Router()
@@ -127,6 +130,67 @@ router.get('/filters', async (req, res) => {
     })
   } catch (err) {
     res.status(500).json({ message: 'Could not load filters' })
+  }
+})
+
+
+// US-34: GET /api/jobs/recommended - the 5 open jobs that best match the logged-in user's profile and CV.
+// This must stay above GET /:id, otherwise "recommended" would be treated as a job id.
+const MAX_JOBS_TO_RANK = 40
+router.get('/recommended', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId)
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+    const profile = await Profile.findOne({ user_id: req.userId }).lean()
+
+    // The default CV (or the first one) gives the AI more information about the user
+    const cv = user.resumes.find((r) => r.isDefault) || user.resumes[0]
+    let cvText = ''
+    if (cv) {
+      try {
+        cvText = await extractResumeText(cv.filename)
+      } catch (err) {
+        console.error('Could not read CV file:', err.message)
+      }
+    }
+
+    // AT-34.2: with no skills and no CV there is nothing to match on
+    const profileSummary = buildProfileSummary(profile, cvText)
+    if (!profileSummary) {
+      return res.status(422).json({
+        needsProfile: true,
+        message: 'Add your skills to your profile or upload a CV to get job recommendations.'
+      })
+    }
+
+    // Open jobs the user hasn't applied to yet, newest first. Ranking at most 40 keeps the AI fast.
+    const appliedJobIds = await Application.distinct('job', { applicant: req.userId })
+    const jobs = await Job.find({ ...visibleJobsFilter(), _id: { $nin: appliedJobIds } })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(MAX_JOBS_TO_RANK)
+      .lean()
+
+    const recommendations = await recommendJobs(profileSummary, jobs)
+    // Send back only what a job card needs
+    res.json({
+      recommendations: recommendations.map(({ job, matchScore, reason }) => ({
+        job: {
+          _id: job._id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          category: job.category,
+          type: job.type
+        },
+        matchScore,
+        reason
+      }))
+    })
+  } catch (err) {
+    console.error('Job recommendations failed:', err.message)
+    res.status(503).json({ message: 'Recommendations are unavailable, try again later' })
   }
 })
 
