@@ -1,4 +1,6 @@
-require('dotenv').config()
+require('dotenv').config({
+  quiet: true
+})
 const express = require('express')
 const cors = require('cors')
 const connectDB = require('./config/db')
