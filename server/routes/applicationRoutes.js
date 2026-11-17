@@ -4,6 +4,7 @@ const Application = require('../models/Application')
 const Job = require('../models/Job')
 const requireAuth = require('../middleware/auth')
 const Notification = require('../models/Notification')
+const Interview = require('../models/Interview')
 const VALID_STATUSES = ['Applied', 'Under Review', 'Interview', 'Offered', 'Rejected', 'Withdrawn'];
 
 // GET /api/applications (Matches /api/applications because of the router mount)
@@ -11,8 +12,13 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     const applications = await Application.find({ applicant: req.userId })
       .populate('job')
-      .sort({ createdAt: -1 });
-    res.json(applications);
+      .sort({ createdAt: -1 })
+      .lean();
+    // US-30 (Task 30.3): attach each application's interview details, if the recruiter sent an invitation
+    const interviews = await Interview.find({ application: { $in: applications.map((a) => a._id) } }).lean();
+    const interviewFor = new Map(interviews.map((i) => [String(i.application), i]));
+    res.json(applications.map((a) => ({ ...a, interview: interviewFor.get(String(a._id)) || null })));
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Failed to fetch applications' });
@@ -75,6 +81,63 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error while updating status' });
+  }
+});
+// US-30: POST /api/applications/:id/interview - the recruiter invites a candidate to an interview.
+// Saves the date, time, place or link and message, moves the application to "Interview" and notifies the candidate.
+router.post('/:id/interview', requireAuth, async (req, res) => {
+  try {
+    const { scheduledAt, locationOrLink, message } = req.body;
+
+    // AT-30.2: the date must be a real date in the future
+    const date = new Date(scheduledAt);
+    if (!scheduledAt || Number.isNaN(date.getTime()) || date <= new Date()) {
+      return res.status(400).json({ message: 'Interview date must be in the future' });
+    }
+    if (!locationOrLink || !String(locationOrLink).trim()) {
+      return res.status(400).json({ message: 'Please add a location or meeting link' });
+    }
+
+    const application = await Application.findById(req.params.id);
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found.' });
+    }
+    const job = await Job.findById(application.job);
+    if (!job || job.recruiter.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Only the recruiter who posted this job can send interview invitations.' });
+    }
+    if (application.status === 'Withdrawn') {
+      return res.status(400).json({ message: 'This candidate withdrew their application.' });
+    }
+
+    // Create the interview, or update it if one was already sent (rescheduling)
+    const interview = await Interview.findOneAndUpdate(
+      { application: application._id },
+      { scheduledAt: date, locationOrLink: String(locationOrLink).trim(), message: String(message || '').trim() },
+      { upsert: true, new: true, runValidators: true }
+    );
+
+    application.status = 'Interview';
+    await application.save();
+
+    // AT-30.1: the candidate gets a notification with the date and the link
+    const when = date.toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Toronto' });
+    try {
+      await Notification.create({
+        recipient: application.applicant,
+        type: 'interview_invitation',
+        message: `You're invited to an interview for "${job.title}" on ${when}. Where: ${interview.locationOrLink}`,
+        application: application._id,
+        job: job._id
+      });
+    } catch (err) {
+      console.error('Could not create interview notification:', err);
+    }
+
+    res.status(201).json({ message: 'Interview invitation sent', application, interview });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error while sending the interview invitation' });
   }
 });
 

@@ -159,6 +159,20 @@ function Applications() {
                     <p><strong>CV Used:</strong> {app.resumeFilename || 'Default CV'}</p>
                     {app.coverLetterFilename && <p><strong>Cover Letter:</strong> Attached</p>}
                   </div>
+                  
+                  {/* US-30 (Task 30.3): interview details sent by the recruiter */}
+                  {app.interview && (
+                    <div className="notice" style={{ textAlign: 'left' }}>
+                      <strong>Interview:</strong> {new Date(app.interview.scheduledAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                      <br />
+                      <strong>Where:</strong>{' '}
+                      {app.interview.locationOrLink.startsWith('http')
+                        ? <a href={app.interview.locationOrLink} target="_blank" rel="noopener noreferrer">{app.interview.locationOrLink}</a>
+                        : app.interview.locationOrLink}
+                      {app.interview.message && <><br /><strong>Message:</strong> {app.interview.message}</>}
+                    </div>
+                  )}
+
 
                   {canWithdraw && (
                     <div className="posting-actions">

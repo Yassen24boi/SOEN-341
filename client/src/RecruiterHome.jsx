@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import InterviewForm from './Components/InterviewForm'
 
 const API = 'http://localhost:5000/api/jobs'
 
@@ -33,6 +34,9 @@ function RecruiterHome() {
   const [appSort, setAppSort] = useState('newest')
   const [appFrom, setAppFrom] = useState('')
   const [appTo, setAppTo] = useState('')
+    // US-30: which application's interview form is open
+  const [interviewFor, setInterviewFor] = useState(null)
+
 
   async function loadJobs() {
     const res = await fetch(`${API}/mine`, { headers })
@@ -253,7 +257,7 @@ function RecruiterHome() {
                     <select
                       id={`status-${a._id}`}
                       value={a.status || 'Applied'}
-                      onChange={(e) => updateApplicationStatus(a._id, e.target.value)}
+                      onChange={(e) => (e.target.value === 'Interview' ? setInterviewFor(a._id) : updateApplicationStatus(a._id, e.target.value))}
                     >
                       <option value="Applied">Applied</option>
                       <option value="Under Review">Under Review</option>
@@ -263,6 +267,21 @@ function RecruiterHome() {
                       {a.status === 'Withdrawn' && <option value="Withdrawn" disabled>Withdrawn</option>}
                     </select>
                   </div>
+                  
+                  {/* US-30: picking "Interview" opens the invitation form instead of changing the status right away */}
+                  {interviewFor === a._id && (
+                    <InterviewForm
+                      applicationId={a._id}
+                      candidateName={a.applicant?.fullName}
+                      onCancel={() => setInterviewFor(null)}
+                      onSent={() => {
+                        setInterviewFor(null)
+                        setApplications((prev) => prev.map((app) => (app._id === a._id ? { ...app, status: 'Interview' } : app)))
+                        loadJobs()
+                      }}
+                    />
+                  )}
+
 
                   {a.resumeFilename ? (
                     <a
