@@ -284,3 +284,107 @@ describe('US-29: Application Status Notifications', () => {
   });
 
 });
+
+describe('US-32: Recruiter Notifications', () => {
+
+  const recruiterId = new mongoose.Types.ObjectId().toString();
+  const applicantId = new mongoose.Types.ObjectId().toString();
+  const applicationId = new mongoose.Types.ObjectId().toString();
+  const jobId = new mongoose.Types.ObjectId().toString();
+
+  const applicantToken = jwt.sign(
+    { userId: applicantId, role: 'jobseeker' },
+    process.env.JWT_SECRET || 'secret_key',
+    { expiresIn: '1h' }
+  );
+
+  const applicantAuth = {
+    Authorization: `Bearer ${applicantToken}`
+  };
+
+  let application;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    application = {
+      _id: applicationId,
+      applicant: applicantId,
+      job: jobId,
+      status: 'Applied',
+      save: jest.fn().mockResolvedValue(true)
+    };
+
+    Application.findById.mockResolvedValue(application);
+
+    Job.findById.mockResolvedValue({
+      _id: jobId,
+      recruiter: recruiterId,
+      title: 'Software Engineer'
+    });
+
+    Notification.create.mockResolvedValue({});
+  });
+
+  test('AT-32.2: Candidate withdrawal notifies recruiter', async () => {
+    const res = await request(app)
+      .patch(`/api/applications/${applicationId}/withdraw`)
+      .set(applicantAuth);
+
+    expect(res.statusCode).toBe(200);
+    expect(application.status).toBe('Withdrawn');
+    expect(Notification.create).toHaveBeenCalledTimes(1);
+
+    expect(Notification.create).toHaveBeenCalledWith({
+      recipient: recruiterId,
+      type: 'candidate_withdrew',
+      message: 'A candidate withdrew their application for "Software Engineer".',
+      application: applicationId,
+      job: jobId
+    });
+  });
+
+  test('Recruiter is notified when candidate withdraws through status endpoint', async () => {
+    const res = await request(app)
+      .patch(`/api/applications/${applicationId}/status`)
+      .set(applicantAuth)
+      .send({ status: 'Withdrawn' });
+
+    expect(res.statusCode).toBe(200);
+    expect(Notification.create).toHaveBeenCalledTimes(1);
+    expect(Notification.create.mock.calls[0][0].recipient).toBe(recruiterId);
+    expect(Notification.create.mock.calls[0][0].type).toBe('candidate_withdrew');
+  });
+
+  test('Withdrawing twice does not create duplicate notifications', async () => {
+    const first = await request(app)
+      .patch(`/api/applications/${applicationId}/withdraw`)
+      .set(applicantAuth);
+
+    const second = await request(app)
+      .patch(`/api/applications/${applicationId}/withdraw`)
+      .set(applicantAuth);
+
+    expect(first.statusCode).toBe(200);
+    expect(second.statusCode).toBe(400);
+    expect(Notification.create).toHaveBeenCalledTimes(1);
+  });
+
+  test('Another user cannot withdraw an application', async () => {
+    const otherUserId = new mongoose.Types.ObjectId().toString();
+
+    const otherToken = jwt.sign(
+      { userId: otherUserId, role: 'jobseeker' },
+      process.env.JWT_SECRET || 'secret_key',
+      { expiresIn: '1h' }
+    );
+
+    const res = await request(app)
+      .patch(`/api/applications/${applicationId}/withdraw`)
+      .set('Authorization', `Bearer ${otherToken}`);
+
+    expect(res.statusCode).toBe(403);
+    expect(Notification.create).not.toHaveBeenCalled();
+  });
+
+});
