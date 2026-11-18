@@ -9,22 +9,55 @@ const Interview = require('../models/Interview')
 const VALID_STATUSES = ['Applied', 'Under Review', 'Interview', 'Offered', 'Rejected', 'Withdrawn'];
 const APPLICATION_STATUSES = VALID_STATUSES;
 
+function startOfUtcWeek(date) {
+  const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
+  return start;
+}
+
 router.get('/me/stats', requireAuth, async (req, res) => {
   try {
-    const counts = await Application.aggregate([
-      { $match: { applicant: new mongoose.Types.ObjectId(req.userId) } },
-      { $group: { _id: { $ifNull: ['$status', 'Applied'] }, count: { $sum: 1 } } }
+    const now = new Date();
+    const currentWeekStart = startOfUtcWeek(now);
+    const firstWeekStart = new Date(currentWeekStart);
+    firstWeekStart.setUTCDate(firstWeekStart.getUTCDate() - 11 * 7);
+    const applicantId = new mongoose.Types.ObjectId(req.userId);
+
+    const [counts, recentApplications] = await Promise.all([
+      Application.aggregate([
+        { $match: { applicant: applicantId } },
+        { $group: { _id: { $ifNull: ['$status', 'Applied'] }, count: { $sum: 1 } } }
+      ]),
+      Application.find({
+        applicant: applicantId,
+        createdAt: { $gte: firstWeekStart, $lte: now }
+      }).select('createdAt').lean()
     ]);
+
+    const weeklyApplications = Array.from({ length: 12 }, (_, index) => {
+      const weekStarting = new Date(firstWeekStart);
+      weekStarting.setUTCDate(weekStarting.getUTCDate() + index * 7);
+      return { weekStarting: weekStarting.toISOString().slice(0, 10), count: 0 };
+    });
+
+    recentApplications.forEach(({ createdAt }) => {
+      const applicationWeek = startOfUtcWeek(new Date(createdAt));
+      const weekIndex = Math.floor((applicationWeek - firstWeekStart) / (7 * 24 * 60 * 60 * 1000));
+      if (weekIndex >= 0 && weekIndex < weeklyApplications.length) weeklyApplications[weekIndex].count += 1;
+    });
 
     const statuses = Object.fromEntries(APPLICATION_STATUSES.map((status) => [status, 0]));
     counts.forEach(({ _id, count }) => {
       if (Object.prototype.hasOwnProperty.call(statuses, _id)) statuses[_id] = count;
     });
 
+    const total = counts.reduce((sum, { count }) => sum + count, 0);
     res.json({
-      total: counts.reduce((sum, { count }) => sum + count, 0),
+      total,
       pending: statuses.Applied + statuses['Under Review'],
-      statuses
+      statuses,
+      weeklyApplications,
+      responseRate: total ? Math.round(((total - statuses.Applied) / total) * 1000) / 10 : 0
     });
   } catch (err) {
     console.error(err);

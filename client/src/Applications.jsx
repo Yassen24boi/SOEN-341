@@ -5,6 +5,8 @@ const API = 'http://localhost:5000/api/applications';
 const EMPTY_STATS = {
     total: 0,
     pending: 0,
+    responseRate: 0,
+    weeklyApplications: [],
     statuses: {
         Applied: 0,
         'Under Review': 0,
@@ -20,6 +22,7 @@ function Applications() {
     const [stats, setStats] = useState(EMPTY_STATS);
     const [filteredStatus, setFilteredStatus] = useState('All');
     const [search, setSearch] = useState('');
+    const [activityWeeks, setActivityWeeks] = useState(12);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
@@ -64,7 +67,12 @@ function Applications() {
                     setMessage(data.message || 'Failed to load application statistics');
                     return;
                 }
-                setStats(data);
+                setStats({
+                    ...EMPTY_STATS,
+                    ...data,
+                    statuses: { ...EMPTY_STATS.statuses, ...data.statuses },
+                    weeklyApplications: data.weeklyApplications || []
+                });
             } catch (err) {
                 console.error(err);
                 setMessage('Could not load application statistics');
@@ -145,6 +153,8 @@ function Applications() {
         if (!query) return true;
         return `${app.job?.title || ''} ${app.job?.company || ''}`.toLowerCase().includes(query);
       });
+    const visibleWeeklyApplications = stats.weeklyApplications.slice(-activityWeeks);
+    const weeklyMaxCount = Math.max(...visibleWeeklyApplications.map((week) => week.count), 1);
 
     if (loading) return <div className="page"><p className="muted">Loading your applications...</p></div>;
     if (message) return <div className="page narrow"><h2>{message}</h2></div>;
@@ -197,6 +207,42 @@ function Applications() {
               );
             })}
           </div>
+          <section className="card application-activity" aria-label="Application activity">
+            <div className="application-activity-heading">
+              <div>
+                <h2>Application activity</h2>
+                <p className="muted">Response rate: <strong>{stats.responseRate}%</strong></p>
+                <p className="muted">This week: <strong>{stats.weeklyApplications[stats.weeklyApplications.length - 1]?.count || 0}</strong> applications</p>
+              </div>
+              <div className="application-range-toggle" role="group" aria-label="Activity chart range">
+                {[4, 12].map((weeks) => (
+                  <button
+                    type="button"
+                    key={weeks}
+                    className={`btn small${activityWeeks === weeks ? ' primary' : ''}`}
+                    aria-pressed={activityWeeks === weeks}
+                    onClick={() => setActivityWeeks(weeks)}
+                  >
+                    {weeks} weeks
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="weekly-chart" role="img" aria-label={`Applications per week, last ${activityWeeks} weeks`}>
+              {visibleWeeklyApplications.map((week) => {
+                const date = new Date(`${week.weekStarting}T00:00:00Z`);
+                return (
+                  <div className="weekly-chart-column" key={week.weekStarting} aria-label={`${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })}: ${week.count}`}>
+                    <strong>{week.count}</strong>
+                    <div className="weekly-chart-bar-track">
+                      <span style={{ height: `${(week.count / weeklyMaxCount) * 100}%` }} />
+                    </div>
+                    <small>{date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })}</small>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         </section>
 
         <div className="filter-row">

@@ -132,6 +132,17 @@ label{font-weight:600;font-size:14px}
 .application-chart-track{height:10px;overflow:hidden;border-radius:999px;background:var(--bg)}
 .application-chart-track span{display:block;height:100%;border-radius:inherit;background:var(--accent)}
 .application-chart-row strong{text-align:right}
+.application-activity{padding:16px}
+.application-activity-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.application-activity h2{margin:0 0 8px;font-size:18px}
+.application-activity-heading p+p{margin-top:4px}
+.application-range-toggle{display:flex;gap:6px}
+.weekly-chart{display:grid;grid-template-columns:repeat(12,minmax(34px,1fr));gap:8px;align-items:end;overflow-x:auto;margin-top:18px;padding-bottom:4px}
+.weekly-chart-column{display:grid;grid-template-rows:20px 100px 28px;gap:4px;justify-items:center;min-width:34px;font-size:11px;color:var(--muted)}
+.weekly-chart-column strong{color:var(--ink)}
+.weekly-chart-bar-track{display:flex;align-items:flex-end;width:100%;height:100%;overflow:hidden;border-radius:6px 6px 2px 2px;background:var(--bg)}
+.weekly-chart-bar-track span{display:block;width:100%;min-height:0;border-radius:6px 6px 0 0;background:var(--accent)}
+.weekly-chart-column small{white-space:nowrap}
 .application-empty{padding:28px;text-align:center;display:grid;justify-items:center;gap:12px}
 .application-empty h2{margin:0}
 .application-empty .btn{margin-top:4px}
