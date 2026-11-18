@@ -1,14 +1,14 @@
+const safe = (fn) => { try { return fn(); } catch (e) { return 'ERR: ' + e.message; } };
+
 console.log({
   window: typeof window,
-  mongoose: require('mongoose/package.json').version,
-  mongodb: require('mongodb/package.json').version,
-  bson: require('bson/package.json').version,
-  mongodbPath: require.resolve('mongodb'),
-  bsonPath: require.resolve('bson'),
   nodeVersion: process.version,
-  versions: typeof process.versions,
   platform: process.platform,
   arch: process.arch,
+  mongoose: safe(() => require('mongoose/package.json').version),
+  mongodb: safe(() => require('mongodb/package.json').version),
+  mongodbPath: safe(() => require.resolve('mongodb')),
+  bsonPath: safe(() => require.resolve('bson')),
 });
 const mongoose = require('mongoose');
 
