@@ -126,14 +126,25 @@ describe('GET /api/jobs/recommended (US-34)', () => {
         expect(askOllama).not.toHaveBeenCalled();
     });
 
-    it('should show "Recommendations are unavailable, try again later" when the AI is down', async () => {
-        askOllama.mockRejectedValue(new Error('fetch failed'));
+  it('should show "Recommendations are unavailable, try again later" when the AI is down', async () => {
+    // Simulate the AI service being unavailable
+    askOllama.mockRejectedValue(new Error('fetch failed'));
 
+    // Suppress the expected console error during this test
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
         const res = await getRecommendations(seekerToken);
 
         expect(res.statusCode).toEqual(503);
-        expect(res.body.message).toBe('Recommendations are unavailable, try again later');
-    });
+        expect(res.body.message).toBe(
+            'Recommendations are unavailable, try again later'
+        );
+    } finally {
+        // Restore normal error logging after the test
+        consoleSpy.mockRestore();
+    }
+});
 
     it('should not break GET /api/jobs/:id for real job ids', async () => {
         const res = await request(app).get(`/api/jobs/${appliedJob._id}`);

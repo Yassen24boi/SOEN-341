@@ -38,7 +38,7 @@ jobs:
         run: npm run build
 
       - name: Run frontend tests
-        run: npm test --if-present -- --run
+        run: npm test --if-present -- --runInBand
 
   server:
     name: Backend Tests and Coverage

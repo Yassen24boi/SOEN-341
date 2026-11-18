@@ -34,22 +34,29 @@ router.post('/:id/feedback', requireAuth, async (req, res) => {
     }
 
     let text = ''
+
     try {
-      text = await extractResumeText(resume.filename)
-    } catch (err) {
-      console.error('Could not read CV file:', err.message)
-    }
+      text = await extractResumeText(resume.filename)}   
+    catch (err) {console.error('Could not read CV file:', err.message)}
+
     if (!text) {
-      return res.status(422).json({ message: "We couldn't read any text from this CV. Please upload a PDF or DOCX file with selectable text." })
+    return res.status(422).json({ message: "We couldn't read any text from this CV. Please upload a PDF or DOCX file with selectable text."})
     }
 
     const feedback = await getResumeFeedback(text)
-    res.json({ resumeId: resume._id, ...feedback, aiGenerated: true })
-  } catch (err) {
-    // AT-33.2: if the AI is down, too slow or gives a bad answer, only this feature fails
-    console.error('AI feedback failed:', err.message)
-    res.status(503).json({ message: 'Feedback is unavailable, try again later' })
+
+    res.json({esumeId: resume._id,...feedback,aiGenerated: true})
   }
+    catch (err) {
+    // AT-33.2: AI failure should not affect other features
+    if (process.env.NODE_ENV !== 'test') {
+    console.error('AI feedback failed:', err.message)
+  }
+
+    res.status(503).json({
+      message: 'Feedback is unavailable, try again later'
+    })
+    }
 })
 
 module.exports = router
