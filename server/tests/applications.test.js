@@ -80,7 +80,7 @@ describe('CareerConnect Job Application Tests', () => {
 
     afterAll(async () => {
         const testUsers = await User.find({
-            email: { $in: [`recruiter_app_${RUN_ID}@example.com`, `seeker_app_${RUN_ID}@example.com`, `seeker2_app_${RUN_ID}@example.com`] }
+            email: { $in: [`recruiter_app_${RUN_ID}@example.com`, `seeker_app_${RUN_ID}@example.com`, `seeker2_app_${RUN_ID}@example.com`, `stats_app_${RUN_ID}@example.com`] }
         });
         const testUserIds = testUsers.map((user) => user._id);
         await Application.deleteMany({ applicant: { $in: testUserIds } });
@@ -163,6 +163,8 @@ describe('CareerConnect Job Application Tests', () => {
         let secondSeekerToken;
         let recruiterToken;
         let seekerApp;
+        let statsSeeker;
+        let statsToken;
 
         beforeAll(async () => {
             const secret = process.env.JWT_SECRET || 'secret_key';
@@ -179,8 +181,75 @@ describe('CareerConnect Job Application Tests', () => {
             });
             secondSeekerToken = jwt.sign({ userId: secondSeeker._id, role: 'jobseeker' }, secret, { expiresIn: '1h' });
 
+            statsSeeker = await User.create({
+                fullName: 'Stats Seeker',
+                email: `stats_app_${RUN_ID}@example.com`,
+                password: 'password123',
+                role: 'jobseeker'
+            });
+            statsToken = jwt.sign({ userId: statsSeeker._id, role: 'jobseeker' }, secret, { expiresIn: '1h' });
+
+            const statuses = [
+                'Applied', 'Applied', 'Applied', 'Applied',
+                'Under Review', 'Interview', 'Interview', 'Rejected', 'Withdrawn'
+            ];
+            const statsJobs = await Job.insertMany(statuses.map((_, index) => ({
+                recruiter: recruiter._id,
+                company: `Stats Company ${index}`,
+                title: `Stats Job ${index}`,
+                location: APP_CITY,
+                description: 'Application statistics test job.',
+                status: 'open'
+            })));
+            await Application.insertMany(statuses.map((status, index) => ({
+                job: statsJobs[index]._id,
+                applicant: statsSeeker._id,
+                status
+            })));
+
             // Fetch an existing application created by jobSeeker in earlier tests
             seekerApp = await Application.findOne({ applicant: jobSeeker._id });
+        });
+
+        it('Task 26.1/26.4: returns per-status counts, pending totals, and withdrawn applications', async () => {
+            const res = await request(app)
+                .get('/api/applications/me/stats')
+                .set('Authorization', `Bearer ${statsToken}`);
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body).toEqual({
+                total: 9,
+                pending: 5,
+                statuses: {
+                    Applied: 4,
+                    'Under Review': 1,
+                    Interview: 2,
+                    Offered: 0,
+                    Rejected: 1,
+                    Withdrawn: 1
+                }
+            });
+        });
+
+        it('Task 26.1: returns zero counts for a seeker with no applications', async () => {
+            const res = await request(app)
+                .get('/api/applications/me/stats')
+                .set('Authorization', `Bearer ${secondSeekerToken}`);
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body.total).toEqual(0);
+            expect(res.body.pending).toEqual(0);
+            expect(Object.values(res.body.statuses).every((count) => count === 0)).toBe(true);
+        });
+
+        it('Task 26.1: counts only the authenticated job seeker applications', async () => {
+            const res = await request(app)
+                .get('/api/applications/me/stats')
+                .set('Authorization', `Bearer ${seekerToken}`);
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body.total).toEqual(await Application.countDocuments({ applicant: jobSeeker._id }));
+            expect(res.body.total).not.toEqual(9);
         });
 
         it('AT-14.1 / Task 14.2: should return only the logged-in seeker applications with populated job details', async () => {

@@ -1,11 +1,36 @@
 const express = require('express')
 const router = express.Router();
+const mongoose = require('mongoose')
 const Application = require('../models/Application')
 const Job = require('../models/Job')
 const requireAuth = require('../middleware/auth')
 const Notification = require('../models/Notification')
 const Interview = require('../models/Interview')
 const VALID_STATUSES = ['Applied', 'Under Review', 'Interview', 'Offered', 'Rejected', 'Withdrawn'];
+const APPLICATION_STATUSES = VALID_STATUSES;
+
+router.get('/me/stats', requireAuth, async (req, res) => {
+  try {
+    const counts = await Application.aggregate([
+      { $match: { applicant: new mongoose.Types.ObjectId(req.userId) } },
+      { $group: { _id: { $ifNull: ['$status', 'Applied'] }, count: { $sum: 1 } } }
+    ]);
+
+    const statuses = Object.fromEntries(APPLICATION_STATUSES.map((status) => [status, 0]));
+    counts.forEach(({ _id, count }) => {
+      if (Object.prototype.hasOwnProperty.call(statuses, _id)) statuses[_id] = count;
+    });
+
+    res.json({
+      total: counts.reduce((sum, { count }) => sum + count, 0),
+      pending: statuses.Applied + statuses['Under Review'],
+      statuses
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to fetch application statistics' });
+  }
+});
 
 // GET /api/applications (Matches /api/applications because of the router mount)
 router.get('/', requireAuth, async (req, res) => {
