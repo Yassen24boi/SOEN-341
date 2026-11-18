@@ -42,7 +42,13 @@ describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', (
 
         await mongoose.connect(
             process.env.DATABASE_URL || 'mongodb://127.0.0.1:27017/careerconnect_test',
-            { serverSelectionTimeoutMS: 5000 }
+            {
+                serverSelectionTimeoutMS: 5000,
+                driverInfo: {
+                    name: 'careerconnect-tests',
+                    version: '1.0.0'
+                }
+            }
         );
     }
 
