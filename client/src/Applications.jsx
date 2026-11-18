@@ -6,6 +6,8 @@ const API = 'http://localhost:5000/api/applications';
 function Applications() {
     const [applications, setApplications] = useState([]);
     const [filteredStatus, setFilteredStatus] = useState('All');
+    const [search, setSearch] = useState('');
+    const [sortNewest, setSortNewest] = useState(true);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
@@ -18,7 +20,7 @@ function Applications() {
                 return;
             }
             try{
-                const res = await fetch(API, {
+                const res = await fetch(`${API}/me/history`, {
                     headers: {Authorization: `Bearer ${token}`}
                 });
                 const data = await res.json();
@@ -52,7 +54,13 @@ function Applications() {
         }
 
         setApplications(prev =>
-          prev.map(app => (app._id === appId ? {...app, status: 'Withdrawn'} : app))
+          prev.map(app => (app._id === appId
+            ? {
+                ...app,
+                status: 'Withdrawn',
+                statusHistory: [...(app.statusHistory || []), { status: 'Withdrawn', date: new Date().toISOString() }]
+              }
+            : app))
         );
       } catch(err){
         console.error(err)
@@ -73,36 +81,37 @@ function Applications() {
       }
     }
 
-    function renderTimeline(currentStatus) {
-        const steps = ['Applied', 'Under Review', 'Interview', 'Offered'];
-
-        // Handle terminal states explicitly
-        if (currentStatus === 'Rejected' || currentStatus === 'Withdrawn') {
-            return (
-                <p className="muted" style={{ fontSize: 14 }}>This application is closed.</p>
-            );
-        }
-
-        const currentIndex = steps.indexOf(currentStatus);
+    function renderTimeline(app) {
+        const history = app.statusHistory && app.statusHistory.length
+          ? app.statusHistory
+          : [{ status: app.status || 'Applied', date: app.createdAt }];
 
         return (
-            <ol className="timeline" aria-label="Application progress">
-                {steps.map((step, index) => {
-                    const state = index < currentIndex ? 'done' : index === currentIndex ? 'now' : ''
-                    return (
-                        <li key={step} className={`tl-step ${state}`}>
-                            <span className="tl-dot">{index + 1}</span>
-                            <span className="tl-label">{step}</span>
-                        </li>
-                    );
-                })}
+            <ol className="history-timeline" aria-label="Application timeline">
+                {history.map((entry) => (
+                    <li key={`${entry.status}-${entry.date}`}>
+                        <span className="history-dot" />
+                        <span>
+                            <strong>{entry.status}</strong>
+                            <small>{new Date(entry.date).toLocaleDateString()}</small>
+                        </span>
+                    </li>
+                ))}
             </ol>
         );
     }
 
-    const displayedApplications = filteredStatus === 'All'
-      ? applications
-      : applications.filter(app => (app.status || 'Applied') === filteredStatus);
+    const displayedApplications = applications
+      .filter(app => filteredStatus === 'All' || (app.status || 'Applied') === filteredStatus)
+      .filter(app => {
+        const query = search.trim().toLowerCase();
+        if (!query) return true;
+        return `${app.job?.title || ''} ${app.job?.company || ''}`.toLowerCase().includes(query);
+      })
+      .sort((a, b) => {
+        const difference = new Date(a.createdAt) - new Date(b.createdAt);
+        return sortNewest ? -difference : difference;
+      });
 
     if (loading) return <div className="page"><p className="muted">Loading your applications...</p></div>;
     if (message) return <div className="page narrow"><h2>{message}</h2></div>;
@@ -115,7 +124,15 @@ function Applications() {
         <span className="eyebrow">Track your progress</span>
         <h1>My Job Applications</h1>
 
-        <div className="filter-row">
+        <div className="history-controls">
+          <label htmlFor="history-search">Search</label>
+          <input
+            id="history-search"
+            type="search"
+            placeholder="Search job title or company"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           <label htmlFor="status-filter">Filter by Status:</label>
           <select
             id="status-filter"
@@ -130,6 +147,9 @@ function Applications() {
             <option value="Rejected">Rejected</option>
             <option value="Withdrawn">Withdrawn</option>
           </select>
+          <button type="button" className="btn small" onClick={() => setSortNewest((value) => !value)}>
+            Date: {sortNewest ? 'Newest first' : 'Oldest first'}
+          </button>
         </div>
 
         {displayedApplications.length === 0 ? (
@@ -137,53 +157,40 @@ function Applications() {
             <p className="muted">No applications match the selected filter. <Link to="/jobs">Browse jobs →</Link></p>
           </div>
         ) : (
-          <div className="app-list">
-            {displayedApplications.map((app) => {
-              const currentStatus = app.status || 'Applied';
-              const canWithdraw = currentStatus !== 'Withdrawn' && currentStatus !== 'Rejected';
-
-              return (
-                <div key={app._id} className="card posting">
-                  <div className="posting-head">
-                    <div>
-                      <h3>{app.job ? app.job.title : 'Job No Longer Available'}</h3>
-                      <div className="job-co">{app.job ? app.job.company : 'Unknown Company'} {app.job?.location && `• ${app.job.location}`}</div>
-                    </div>
-                    <span className={`pill ${getStatusClass(currentStatus)}`}>{currentStatus}</span>
-                  </div>
-
-                  {renderTimeline(currentStatus)}
-
-                  <div className="app-details">
-                    <p><strong>Applied On:</strong> {new Date(app.createdAt).toLocaleDateString()}</p>
-                    <p><strong>CV Used:</strong> {app.resumeFilename || 'Default CV'}</p>
-                    {app.coverLetterFilename && <p><strong>Cover Letter:</strong> Attached</p>}
-                  </div>
-                  
-                  {/* US-30 (Task 30.3): interview details sent by the recruiter */}
-                  {app.interview && (
-                    <div className="notice" style={{ textAlign: 'left' }}>
-                      <strong>Interview:</strong> {new Date(app.interview.scheduledAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                      <br />
-                      <strong>Where:</strong>{' '}
-                      {app.interview.locationOrLink.startsWith('http')
-                        ? <a href={app.interview.locationOrLink} target="_blank" rel="noopener noreferrer">{app.interview.locationOrLink}</a>
-                        : app.interview.locationOrLink}
-                      {app.interview.message && <><br /><strong>Message:</strong> {app.interview.message}</>}
-                    </div>
-                  )}
-
-
-                  {canWithdraw && (
-                    <div className="posting-actions">
-                      <button className="btn small danger" onClick={() => withdrawApplication(app._id)}>
-                        Withdraw
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="history-table-wrap">
+            <table className="history-table">
+              <thead>
+                <tr>
+                  <th>Application</th>
+                  <th>Applied</th>
+                  <th>Current status</th>
+                  <th>Timeline</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedApplications.map((app) => {
+                  const currentStatus = app.status || 'Applied';
+                  const canWithdraw = currentStatus !== 'Withdrawn' && currentStatus !== 'Rejected';
+                  return (
+                    <tr key={app._id}>
+                      <td>
+                        <strong>{app.job ? app.job.title : 'Job No Longer Available'}</strong>
+                        <div className="job-co">{app.job ? app.job.company : 'Unknown Company'} {app.job?.location && `• ${app.job.location}`}</div>
+                      </td>
+                      <td>{new Date(app.createdAt).toLocaleDateString()}</td>
+                      <td><span className={`pill ${getStatusClass(currentStatus)}`}>{currentStatus}</span></td>
+                      <td>{renderTimeline(app)}</td>
+                      <td>
+                        {canWithdraw && (
+                          <button className="btn small danger" onClick={() => withdrawApplication(app._id)}>Withdraw</button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

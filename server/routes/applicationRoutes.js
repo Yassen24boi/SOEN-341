@@ -7,6 +7,45 @@ const Notification = require('../models/Notification')
 const Interview = require('../models/Interview')
 const VALID_STATUSES = ['Applied', 'Under Review', 'Interview', 'Offered', 'Rejected', 'Withdrawn'];
 
+function addStatusHistory(application, status, date = new Date()) {
+  if (application.statusHistory && application.statusHistory.some((entry) => entry.status === status)) return;
+  application.statusHistory = application.statusHistory || [];
+  application.statusHistory.push({ status, date });
+}
+
+// Complete history for the logged-in job seeker, ordered by application date (newest first).
+router.get('/me/history', requireAuth, async (req, res) => {
+  try {
+    const applications = await Application.find({ applicant: req.userId })
+      .populate('job', 'title company location')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const history = applications.map((application) => {
+      let statusHistory = Array.isArray(application.statusHistory)
+        ? application.statusHistory
+        : [];
+
+      if (statusHistory.length === 0) {
+        statusHistory = [{ status: 'Applied', date: application.createdAt }];
+        if (application.status && application.status !== 'Applied') {
+          statusHistory.push({ status: application.status, date: application.updatedAt });
+        }
+      } else if (!statusHistory.some((entry) => entry.status === 'Applied')) {
+        statusHistory = [{ status: 'Applied', date: application.createdAt }, ...statusHistory];
+      }
+
+      statusHistory = [...statusHistory].sort((a, b) => new Date(a.date) - new Date(b.date));
+      return { ...application, statusHistory };
+    });
+
+    res.json(history);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to fetch application history' });
+  }
+});
+
 // GET /api/applications (Matches /api/applications because of the router mount)
 router.get('/', requireAuth, async (req, res) => {
   try {
@@ -61,6 +100,7 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
     const previousStatus = application.status;
 
   application.status = status;
+  if (previousStatus !== status) addStatusHistory(application, status);
   await application.save();
 
   if (isRecruiter && !isApplicant && previousStatus !== status) {
@@ -118,6 +158,7 @@ router.post('/:id/interview', requireAuth, async (req, res) => {
     );
 
     application.status = 'Interview';
+    addStatusHistory(application, 'Interview');
     await application.save();
 
     // AT-30.1: the candidate gets a notification with the date and the link
@@ -153,6 +194,7 @@ router.patch('/:id/withdraw', requireAuth, async (req, res) => {
     }
 
     application.status = 'Withdrawn';
+    addStatusHistory(application, 'Withdrawn');
     await application.save();
 
     res.json({message: 'Application withdrawn successfully', application})
