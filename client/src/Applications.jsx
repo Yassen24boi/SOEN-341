@@ -2,9 +2,22 @@ import {useEffect, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom'
 
 const API = 'http://localhost:5000/api/applications';
+const EMPTY_STATS = {
+    total: 0,
+    pending: 0,
+    statuses: {
+        Applied: 0,
+        'Under Review': 0,
+        Interview: 0,
+        Offered: 0,
+        Rejected: 0,
+        Withdrawn: 0
+    }
+};
 
 function Applications() {
     const [applications, setApplications] = useState([]);
+    const [stats, setStats] = useState(EMPTY_STATS);
     const [filteredStatus, setFilteredStatus] = useState('All');
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
@@ -38,6 +51,27 @@ function Applications() {
           }  
         fetchApplications();
     }, [token, navigate]);
+
+    useEffect(() => {
+        async function fetchStats() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${API}/me/stats`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    setMessage(data.message || 'Failed to load application statistics');
+                    return;
+                }
+                setStats(data);
+            } catch (err) {
+                console.error(err);
+                setMessage('Could not load application statistics');
+            }
+        }
+        fetchStats();
+    }, [token]);
 
     async function withdrawApplication(appId) {
       if(!window.confirm('Are you sure you want to withdraw this application?')) return;
@@ -101,7 +135,11 @@ function Applications() {
     }
 
     const displayedApplications = applications
-      .filter(app => filteredStatus === 'All' || (app.status || 'Applied') === filteredStatus)
+      .filter(app => {
+        const status = app.status || 'Applied';
+        if (filteredStatus === 'Pending') return status === 'Applied' || status === 'Under Review';
+        return filteredStatus === 'All' || status === filteredStatus;
+      })
       .filter(app => {
         const query = search.trim().toLowerCase();
         if (!query) return true;
@@ -119,6 +157,48 @@ function Applications() {
         <span className="eyebrow">Track your progress</span>
         <h1>My Job Applications</h1>
 
+        <section className="application-dashboard" aria-label="Application statistics">
+          <div className="application-stat-tiles">
+            {[
+              { label: 'Total', value: stats.total, filter: 'All' },
+              { label: 'Pending', value: stats.pending, filter: 'Pending' },
+              { label: 'Interview', value: stats.statuses.Interview, filter: 'Interview' },
+              { label: 'Offered', value: stats.statuses.Offered, filter: 'Offered' },
+              { label: 'Rejected', value: stats.statuses.Rejected, filter: 'Rejected' }
+            ].map((tile) => (
+              <button
+                type="button"
+                key={tile.label}
+                className={`card application-stat${filteredStatus === tile.filter ? ' selected' : ''}`}
+                aria-pressed={filteredStatus === tile.filter}
+                onClick={() => setFilteredStatus(tile.filter)}
+              >
+                <span>{tile.label}</span>
+                <strong>{tile.value}</strong>
+              </button>
+            ))}
+          </div>
+          <div className="card application-chart" aria-label="Applications by status">
+            <h2>Status breakdown</h2>
+            {Object.entries(stats.statuses).map(([status, count]) => {
+              const percentage = stats.total ? (count / stats.total) * 100 : 0;
+              return (
+                <div className="application-chart-row" key={status}>
+                  <span>{status}</span>
+                  <div
+                    className="application-chart-track"
+                    role="img"
+                    aria-label={`${status}: ${count}`}
+                  >
+                    <span style={{ width: `${percentage}%` }} />
+                  </div>
+                  <strong>{count}</strong>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         <div className="filter-row">
           <label htmlFor="history-search">Search:</label>
           <input
@@ -135,6 +215,7 @@ function Applications() {
             onChange={(e) => setFilteredStatus(e.target.value)}
           >
             <option value="All">All Statuses ({applications.length})</option>
+            <option value="Pending">Pending ({stats.pending})</option>
             <option value="Applied">Applied</option>
             <option value="Under Review">Under Review</option>
             <option value="Interview">Interview</option>
@@ -144,7 +225,13 @@ function Applications() {
           </select>
         </div>
 
-        {displayedApplications.length === 0 ? (
+        {applications.length === 0 ? (
+          <div className="card application-empty">
+            <h2>No applications yet</h2>
+            <p className="muted">Start your job search and your applications will appear here.</p>
+            <Link className="btn primary" to="/jobs">Browse jobs</Link>
+          </div>
+        ) : displayedApplications.length === 0 ? (
           <div className="card" style={{ padding: 28, textAlign: 'center' }}>
             <p className="muted">No applications match the selected filter. <Link to="/jobs">Browse jobs →</Link></p>
           </div>

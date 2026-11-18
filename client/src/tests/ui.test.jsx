@@ -539,6 +539,23 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
   describe('Sprint 2: US-14 - My Applications & Status Tracking (Applications.jsx)', () => {
     beforeEach(() => {
       localStorage.setItem('token', 'mock_token');
+      fetch.mockImplementation((url) => Promise.resolve({
+        ok: true,
+        json: async () => url === 'http://localhost:5000/api/applications/me/stats'
+          ? {
+              total: 0,
+              pending: 0,
+              statuses: {
+                Applied: 0,
+                'Under Review': 0,
+                Interview: 0,
+                Offered: 0,
+                Rejected: 0,
+                Withdrawn: 0
+              }
+            }
+          : []
+      }));
     });
 
     it('AT-14.1 & Task 14.2: should render all rows with job title, company, applied date, and status when applications are fetched', async () => {
@@ -689,6 +706,83 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
         expect(screen.getByText('Software Engineer')).toBeInTheDocument();
         expect(screen.queryByText('Developer')).not.toBeInTheDocument();
       });
+    });
+
+    it('AT-26.1: shows application counts and filters the list when a stat tile is clicked', async () => {
+      const applications = [
+        ...Array.from({ length: 4 }, (_, index) => ({
+          _id: `applied-${index}`,
+          job: { title: `Applied Role ${index}`, company: 'Company' },
+          status: 'Applied',
+          createdAt: '2026-06-01T00:00:00.000Z'
+        })),
+        {
+          _id: 'review',
+          job: { title: 'Review Role', company: 'Company' },
+          status: 'Under Review',
+          createdAt: '2026-06-02T00:00:00.000Z'
+        },
+        ...Array.from({ length: 2 }, (_, index) => ({
+          _id: `interview-${index}`,
+          job: { title: `Interview Role ${index}`, company: 'Company' },
+          status: 'Interview',
+          createdAt: '2026-06-03T00:00:00.000Z'
+        })),
+        {
+          _id: 'rejected',
+          job: { title: 'Rejected Role', company: 'Company' },
+          status: 'Rejected',
+          createdAt: '2026-06-04T00:00:00.000Z'
+        }
+      ];
+      const stats = {
+        total: 8,
+        pending: 5,
+        statuses: {
+          Applied: 4,
+          'Under Review': 1,
+          Interview: 2,
+          Offered: 0,
+          Rejected: 1,
+          Withdrawn: 0
+        }
+      };
+      fetch.mockImplementation((url) => Promise.resolve({
+        ok: true,
+        json: async () => url === 'http://localhost:5000/api/applications/me/stats' ? stats : applications
+      }));
+
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Total 8/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Pending 5/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Interview 2/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Rejected 1/i })).toBeInTheDocument();
+        expect(screen.getByRole('img', { name: 'Under Review: 1' })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Pending 5/i }));
+
+      expect(screen.getByText('Applied Role 0')).toBeInTheDocument();
+      expect(screen.getByText('Review Role')).toBeInTheDocument();
+      expect(screen.queryByText('Interview Role 0')).not.toBeInTheDocument();
+      expect(screen.queryByText('Rejected Role')).not.toBeInTheDocument();
+    });
+
+    it('AT-26.2: shows an empty state and browse-jobs link for a seeker with no applications', async () => {
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText('No applications yet')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Browse jobs' })).toHaveAttribute('href', '/jobs');
     });
 
     it('should successfully trigger a PATCH request to withdraw an application when the Withdraw button is clicked and confirmed', async () => {
