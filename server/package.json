@@ -10,12 +10,6 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "testEnvironmentOptions": {
-      "customExportConditions": [
-        "node",
-        "node-addons"
-      ]
-    },
     "collectCoverageFrom": [
       "routes/**/*.js",
       "middleware/**/*.js",
