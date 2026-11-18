@@ -4,6 +4,9 @@ const User = require('../models/User')
 const Job = require('../models/Job')
 const Application = require('../models/Application')
 const Notification = require('../models/Notification')
+const Profile = require('../models/Profile')
+const { extractResumeText } = require('../services/resumeText')
+const { buildProfileSummary, recommendJobs } = require('../services/jobMatching')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const router = express.Router()
@@ -20,11 +23,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: {fileSize: 10 * 1024 * 1024},
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = ['.pdf', '.doc', '.docx']
-    if (allowed.includes(path.extname(file.originalname).toLowerCase())){
-      cb(null,true)
+    if (allowed.includes(path.extname(file.originalname).toLowerCase())) {
+      cb(null, true)
     } else {
       cb(new Error('Only PDF, DOC or DOCX files are allowed'))
     }
@@ -32,6 +35,7 @@ const upload = multer({
 })
 
 const PAGE_SIZE = 10
+const APPLICATION_STATUSES = ['Applied', 'Under Review', 'Interview', 'Offered', 'Rejected', 'Withdrawn']
 
 // Turns characters like . or ( into plain text, so a search for "c++" doesn't break the query
 function escapeRegex(text) {
@@ -129,6 +133,67 @@ router.get('/filters', async (req, res) => {
   }
 })
 
+
+// US-34: GET /api/jobs/recommended - the 5 open jobs that best match the logged-in user's profile and CV.
+// This must stay above GET /:id, otherwise "recommended" would be treated as a job id.
+const MAX_JOBS_TO_RANK = 40
+router.get('/recommended', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId)
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+    const profile = await Profile.findOne({ user_id: req.userId }).lean()
+
+    // The default CV (or the first one) gives the AI more information about the user
+    const cv = user.resumes.find((r) => r.isDefault) || user.resumes[0]
+    let cvText = ''
+    if (cv) {
+      try {
+        cvText = await extractResumeText(cv.filename)
+      } catch (err) {
+        console.error('Could not read CV file:', err.message)
+      }
+    }
+
+    // AT-34.2: with no skills and no CV there is nothing to match on
+    const profileSummary = buildProfileSummary(profile, cvText)
+    if (!profileSummary) {
+      return res.status(422).json({
+        needsProfile: true,
+        message: 'Add your skills to your profile or upload a CV to get job recommendations.'
+      })
+    }
+
+    // Open jobs the user hasn't applied to yet, newest first. Ranking at most 40 keeps the AI fast.
+    const appliedJobIds = await Application.distinct('job', { applicant: req.userId })
+    const jobs = await Job.find({ ...visibleJobsFilter(), _id: { $nin: appliedJobIds } })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(MAX_JOBS_TO_RANK)
+      .lean()
+
+    const recommendations = await recommendJobs(profileSummary, jobs)
+    // Send back only what a job card needs
+    res.json({
+      recommendations: recommendations.map(({ job, matchScore, reason }) => ({
+        job: {
+          _id: job._id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          category: job.category,
+          type: job.type
+        },
+        matchScore,
+        reason
+      }))
+    })
+  } catch (err) {
+    console.error('Job recommendations failed:', err.message)
+    res.status(503).json({ message: 'Recommendations are unavailable, try again later' })
+  }
+})
+
 // Reads the optional salary fields from a request body (salaryMin, salaryMax, salaryPeriod).
 // An empty value means "no salary", so it clears the field.
 function readSalary(body) {
@@ -156,12 +221,35 @@ function readSalary(body) {
 
 // Reads the optional deadline (a date like 2026-11-15). The posting stays open until the end of that day.
 // An empty value means "no deadline", so it clears the field.
-function readDeadline(body) {
+// A new or changed deadline must be in the future. Re-saving the same deadline is always allowed
+// (so editing an old posting doesn't fail just because its deadline has passed).
+function readDeadline(body, existingDeadline) {
   if (body.deadline === undefined) return { values: {} }
   if (body.deadline === null || body.deadline === '') return { values: { deadline: undefined } }
   const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(body.deadline) ? `${body.deadline}T23:59:59` : body.deadline)
   if (Number.isNaN(date.getTime())) return { error: 'Deadline must be a valid date' }
+  const unchanged = existingDeadline && date.getTime() === new Date(existingDeadline).getTime()
+  if (!unchanged && date.getTime() <= Date.now()) return { error: 'Deadline must be a future date.' }
   return { values: { deadline: date } }
+}
+
+// Reads the optional category (must be one of the known categories) and requirements text.
+// An empty value clears the field.
+function readExtras(body) {
+  const values = {}
+  if (body.category !== undefined) {
+    if (body.category === null || body.category === '') {
+      values.category = undefined
+    } else if (!Job.JOB_CATEGORIES.includes(body.category)) {
+      return { error: 'Category is not valid' }
+    } else {
+      values.category = body.category
+    }
+  }
+  if (body.requirements !== undefined) {
+    values.requirements = String(body.requirements ?? '').trim() || undefined
+  }
+  return { values }
 }
 
 router.post('/', requireAuth, requireRecruiter, async (req, res) => {
@@ -178,7 +266,9 @@ router.post('/', requireAuth, requireRecruiter, async (req, res) => {
     }
     const deadline = readDeadline(req.body)
     if (deadline.error) return res.status(400).json({ message: deadline.error })
-    const job = await Job.create({ recruiter: req.userId, title, company, location, type, description, ...salary.values, ...deadline.values })
+    const extras = readExtras(req.body)
+    if (extras.error) return res.status(400).json({ message: extras.error })
+    const job = await Job.create({ recruiter: req.userId, title, company, location, type, description, ...salary.values, ...deadline.values, ...extras.values })
     res.status(201).json(job)
   } catch (err) {
     res.status(500).json({ message: 'Could not create posting' })
@@ -192,7 +282,20 @@ router.get('/mine', requireAuth, requireRecruiter, async (req, res) => {
       { $group: { _id: '$job', count: { $sum: 1 } } }
     ])
     const countMap = Object.fromEntries(counts.map((c) => [String(c._id), c.count]))
-    res.json(jobs.map((j) => ({ ...j, applicationCount: countMap[String(j._id)] || 0 })))
+    const byStatus = await Application.aggregate([
+      { $match: { job: { $in: jobs.map((j) => j._id) } } },
+      { $group: { _id: { job: '$job', status: '$status' }, count: { $sum: 1 } } }
+    ])
+    const statusMap = {}
+    byStatus.forEach((c) => {
+      const key = String(c._id.job)
+      statusMap[key] = { ...(statusMap[key] || {}), [c._id.status]: c.count }
+    })
+    res.json(jobs.map((j) => ({
+      ...j,
+      applicationCount: countMap[String(j._id)] || 0,
+      statusCounts: statusMap[String(j._id)] || {}
+    })))
   } catch (err) {
     res.status(500).json({ message: 'Could not load postings' })
   }
@@ -206,24 +309,24 @@ router.post('/:id/apply', requireAuth, upload.single('coverLetterFile'), async (
     const { resumeFilename } = req.body
     const coverLetterFilename = req.file ? req.file.filename : null
 
-    const app = await Application.create({ 
-      job: job._id, 
-      applicant: req.userId, 
+    const app = await Application.create({
+      job: job._id,
+      applicant: req.userId,
       resumeFilename: resumeFilename || null,
       coverLetterFilename: coverLetterFilename
-      
+
     })
     try {
-     await Notification.create({ recipient: job.recruiter, type: 'new_application', message: `A new candidate applied to your "${job.title}" posting.`, application: app._id,job: job._id})
-} catch (notificationError) {
-  console.error('Could not create recruiter notification:', notificationError)
-}
+      await Notification.create({ recipient: job.recruiter, type: 'new_application', message: `A new candidate applied to your "${job.title}" posting.`, application: app._id, job: job._id })
+    } catch (notificationError) {
+      console.error('Could not create recruiter notification:', notificationError)
+    }
 
     const populatedApp = await Application.findById(app._id).populate('job', 'title')
 
     res.status(201).json({
-      _id:populatedApp._id,
-      jobTitle:populatedApp.job.title,
+      _id: populatedApp._id,
+      jobTitle: populatedApp.job.title,
       createdAt: populatedApp.createdAt,
       status: populatedApp.status,
       resumeFilename: populatedApp.resumeFilename,
@@ -238,9 +341,27 @@ router.get('/:id/applications', requireAuth, requireRecruiter, async (req, res) 
   try {
     const job = await getOwnedJob(req, res)
     if (!job) return
-    const apps = await Application.find({ job: job._id })
-      .sort({ createdAt: -1 })
+    const filter = { job: job._id }
+    const status = String(req.query.status || '')
+    if (APPLICATION_STATUSES.includes(status)) filter.status = status
+    const range = {}
+    if (req.query.from) {
+      const from = new Date(`${req.query.from}T00:00:00`)
+      if (!Number.isNaN(from.getTime())) range.$gte = from
+    }
+    if (req.query.to) {
+      const to = new Date(`${req.query.to}T23:59:59.999`)
+      if (!Number.isNaN(to.getTime())) range.$lte = to
+    }
+    if (Object.keys(range).length) filter.createdAt = range
+    const sort = String(req.query.sort || 'newest')
+
+    const apps = await Application.find(filter)
+      .sort({ createdAt: sort === 'oldest' ? 1 : -1 })
       .populate('applicant', '-password')
+    if (sort === 'name') {
+      apps.sort((a, b) => (a.applicant?.fullName || '').localeCompare(b.applicant?.fullName || ''))
+    }
     res.json(apps)
   } catch (err) {
     res.status(500).json({ message: 'Could not load applications' })
@@ -282,9 +403,12 @@ router.put('/:id', requireAuth, requireRecruiter, async (req, res) => {
     const salary = readSalary(req.body)
     if (salary.error) return res.status(400).json({ message: salary.error })
     Object.assign(job, salary.values)
-    const deadline = readDeadline(req.body)
+    const deadline = readDeadline(req.body, job.deadline)
     if (deadline.error) return res.status(400).json({ message: deadline.error })
     Object.assign(job, deadline.values)
+    const extras = readExtras(req.body)
+    if (extras.error) return res.status(400).json({ message: extras.error })
+    Object.assign(job, extras.values)
     if (job.salaryMin !== undefined && job.salaryMax !== undefined && job.salaryMin > job.salaryMax) {
       return res.status(400).json({ message: 'Minimum salary cannot be higher than the maximum' })
     }
@@ -302,10 +426,24 @@ router.patch('/:id/status', requireAuth, requireRecruiter, async (req, res) => {
       return res.status(400).json({ message: 'Status must be open, closed or archived' })
     }
     job.status = req.body.status
+    job.archivedAt = req.body.status === 'archived' ? new Date() : undefined
     await job.save()
     res.json(job)
   } catch (err) {
     res.status(500).json({ message: 'Could not change status' })
+  }
+})
+// US-17: close a posting (owner only)
+router.patch('/:id/close', requireAuth, requireRecruiter, async (req, res) => {
+  try {
+    const job = await getOwnedJob(req, res)
+    if (!job) return
+    job.status = 'closed'
+    job.archivedAt = undefined
+    await job.save()
+    res.json(job)
+  } catch (err) {
+    res.status(500).json({ message: 'Could not close posting' })
   }
 })
 router.delete('/:id', requireAuth, requireRecruiter, async (req, res) => {
@@ -317,6 +455,34 @@ router.delete('/:id', requireAuth, requireRecruiter, async (req, res) => {
     res.json({ message: 'Posting deleted' })
   } catch (err) {
     res.status(500).json({ message: 'Could not delete posting' })
+  }
+})
+// US-21: archive and restore a posting (owner only)
+router.patch('/:id/archive', requireAuth, requireRecruiter, async (req, res) => {
+  try {
+    const job = await getOwnedJob(req, res)
+    if (!job) return
+    job.status = 'archived'
+    job.archivedAt = new Date()
+    await job.save()
+    res.json(job)
+  } catch (err) {
+    res.status(500).json({ message: 'Could not archive posting' })
+  }
+})
+router.patch('/:id/restore', requireAuth, requireRecruiter, async (req, res) => {
+  try {
+    const job = await getOwnedJob(req, res)
+    if (!job) return
+    if (job.status !== 'archived') {
+      return res.status(400).json({ message: 'Only archived postings can be restored' })
+    }
+    job.status = 'closed'
+    job.archivedAt = undefined
+    await job.save()
+    res.json(job)
+  } catch (err) {
+    res.status(500).json({ message: 'Could not restore posting' })
   }
 })
 

@@ -1,6 +1,4 @@
-require('dotenv').config({
-  quiet: true
-})
+require('dotenv').config({ quiet: true })
 const express = require('express')
 const cors = require('cors')
 const connectDB = require('./config/db')
@@ -9,6 +7,7 @@ const profileRoutes = require('./routes/profileRoutes')
 const jobRoutes = require('./routes/jobRoutes')
 const applicationRoutes = require('./routes/applicationRoutes')
 const notificationRoutes = require('./routes/notificationRoutes')
+const resumeRoutes = require('./routes/resumeRoutes')
 const path = require('path')
 
 const app = express()
@@ -32,6 +31,7 @@ app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/jobs', jobRoutes);
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/applications', applicationRoutes);
+app.use('/api/resumes', resumeRoutes)
 
 // Only listen on port if NOT in test environment
 if (process.env.NODE_ENV !== 'test') {

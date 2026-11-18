@@ -539,6 +539,25 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
   describe('Sprint 2: US-14 - My Applications & Status Tracking (Applications.jsx)', () => {
     beforeEach(() => {
       localStorage.setItem('token', 'mock_token');
+      fetch.mockImplementation((url) => Promise.resolve({
+        ok: true,
+        json: async () => url === 'http://localhost:5000/api/applications/me/stats'
+          ? {
+              total: 0,
+              pending: 0,
+              responseRate: 0,
+              weeklyApplications: [],
+              statuses: {
+                Applied: 0,
+                'Under Review': 0,
+                Interview: 0,
+                Offered: 0,
+                Rejected: 0,
+                Withdrawn: 0
+              }
+            }
+          : []
+      }));
     });
 
     it('AT-14.1 & Task 14.2: should render all rows with job title, company, applied date, and status when applications are fetched', async () => {
@@ -651,6 +670,173 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
         expect(screen.getAllByText('Interview').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Offered').length).toBeGreaterThan(0);
       });
+    });
+
+    it('AT-25.2: should search application history by company', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ([
+          {
+            _id: 'google-app',
+            job: { title: 'Software Engineer', company: 'Google' },
+            status: 'Interview',
+            createdAt: '2026-06-03T00:00:00.000Z'
+          },
+          {
+            _id: 'microsoft-app',
+            job: { title: 'Developer', company: 'Microsoft' },
+            status: 'Applied',
+            createdAt: '2026-06-02T00:00:00.000Z'
+          }
+        ]),
+      });
+
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Software Engineer')).toBeInTheDocument();
+        expect(screen.getByText('Developer')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByLabelText(/Search/i), { target: { value: 'Google' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Software Engineer')).toBeInTheDocument();
+        expect(screen.queryByText('Developer')).not.toBeInTheDocument();
+      });
+    });
+
+    it('AT-26.1: shows application counts and filters the list when a stat tile is clicked', async () => {
+      const applications = [
+        ...Array.from({ length: 4 }, (_, index) => ({
+          _id: `applied-${index}`,
+          job: { title: `Applied Role ${index}`, company: 'Company' },
+          status: 'Applied',
+          createdAt: '2026-06-01T00:00:00.000Z'
+        })),
+        {
+          _id: 'review',
+          job: { title: 'Review Role', company: 'Company' },
+          status: 'Under Review',
+          createdAt: '2026-06-02T00:00:00.000Z'
+        },
+        ...Array.from({ length: 2 }, (_, index) => ({
+          _id: `interview-${index}`,
+          job: { title: `Interview Role ${index}`, company: 'Company' },
+          status: 'Interview',
+          createdAt: '2026-06-03T00:00:00.000Z'
+        })),
+        {
+          _id: 'rejected',
+          job: { title: 'Rejected Role', company: 'Company' },
+          status: 'Rejected',
+          createdAt: '2026-06-04T00:00:00.000Z'
+        }
+      ];
+      const stats = {
+        total: 8,
+        pending: 5,
+        statuses: {
+          Applied: 4,
+          'Under Review': 1,
+          Interview: 2,
+          Offered: 0,
+          Rejected: 1,
+          Withdrawn: 0
+        }
+      };
+      fetch.mockImplementation((url) => Promise.resolve({
+        ok: true,
+        json: async () => url === 'http://localhost:5000/api/applications/me/stats' ? stats : applications
+      }));
+
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Total 8/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Pending 5/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Interview 2/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Rejected 1/i })).toBeInTheDocument();
+        expect(screen.getByRole('img', { name: 'Under Review: 1' })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Pending 5/i }));
+
+      expect(screen.getByText('Applied Role 0')).toBeInTheDocument();
+      expect(screen.getByText('Review Role')).toBeInTheDocument();
+      expect(screen.queryByText('Interview Role 0')).not.toBeInTheDocument();
+      expect(screen.queryByText('Rejected Role')).not.toBeInTheDocument();
+    });
+
+    it('AT-26.2: shows an empty state and browse-jobs link for a seeker with no applications', async () => {
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText('No applications yet')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Browse jobs' })).toHaveAttribute('href', '/jobs');
+    });
+
+    it('AT-27.1/27.2/27.3: shows weekly activity, response rate, this-week count, and range toggle', async () => {
+      const currentWeek = new Date();
+      currentWeek.setUTCHours(0, 0, 0, 0);
+      currentWeek.setUTCDate(currentWeek.getUTCDate() - ((currentWeek.getUTCDay() + 6) % 7));
+      currentWeek.setUTCDate(currentWeek.getUTCDate() - 11 * 7);
+      const weeklyApplications = Array.from({ length: 12 }, (_, index) => {
+        const weekStarting = new Date(currentWeek);
+        weekStarting.setUTCDate(weekStarting.getUTCDate() + index * 7);
+        return {
+          weekStarting: weekStarting.toISOString().slice(0, 10),
+          count: index === 10 ? 2 : index === 11 ? 3 : 0
+        };
+      });
+      const stats = {
+        total: 10,
+        pending: 8,
+        responseRate: 20,
+        weeklyApplications,
+        statuses: {
+          Applied: 8,
+          'Under Review': 0,
+          Interview: 2,
+          Offered: 0,
+          Rejected: 0,
+          Withdrawn: 0
+        }
+      };
+      fetch.mockImplementation((url) => Promise.resolve({
+        ok: true,
+        json: async () => url === 'http://localhost:5000/api/applications/me/stats' ? stats : []
+      }));
+
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText(/Response rate:/)).toHaveTextContent('20%');
+      expect(screen.getByText(/This week:/).parentElement).toHaveTextContent('3');
+      const chart = screen.getByRole('img', { name: 'Applications per week, last 12 weeks' });
+      expect(chart.querySelectorAll('.weekly-chart-column')).toHaveLength(12);
+      expect(chart.querySelector('[aria-label$=": 2"]')).toBeInTheDocument();
+      expect(chart.querySelector('[aria-label$=": 3"]')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: '4 weeks' }));
+      const fourWeekChart = screen.getByRole('img', { name: 'Applications per week, last 4 weeks' });
+      expect(fourWeekChart.querySelectorAll('.weekly-chart-column')).toHaveLength(4);
+      expect(fourWeekChart.querySelector('[aria-label$=": 2"]')).toBeInTheDocument();
+      expect(fourWeekChart.querySelector('[aria-label$=": 3"]')).toBeInTheDocument();
     });
 
     it('should successfully trigger a PATCH request to withdraw an application when the Withdraw button is clicked and confirmed', async () => {

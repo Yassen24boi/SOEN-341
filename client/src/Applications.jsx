@@ -2,10 +2,27 @@ import {useEffect, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom'
 
 const API = 'http://localhost:5000/api/applications';
+const EMPTY_STATS = {
+    total: 0,
+    pending: 0,
+    responseRate: 0,
+    weeklyApplications: [],
+    statuses: {
+        Applied: 0,
+        'Under Review': 0,
+        Interview: 0,
+        Offered: 0,
+        Rejected: 0,
+        Withdrawn: 0
+    }
+};
 
 function Applications() {
     const [applications, setApplications] = useState([]);
+    const [stats, setStats] = useState(EMPTY_STATS);
     const [filteredStatus, setFilteredStatus] = useState('All');
+    const [search, setSearch] = useState('');
+    const [activityWeeks, setActivityWeeks] = useState(12);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
@@ -37,6 +54,32 @@ function Applications() {
           }  
         fetchApplications();
     }, [token, navigate]);
+
+    useEffect(() => {
+        async function fetchStats() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${API}/me/stats`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    setMessage(data.message || 'Failed to load application statistics');
+                    return;
+                }
+                setStats({
+                    ...EMPTY_STATS,
+                    ...data,
+                    statuses: { ...EMPTY_STATS.statuses, ...data.statuses },
+                    weeklyApplications: data.weeklyApplications || []
+                });
+            } catch (err) {
+                console.error(err);
+                setMessage('Could not load application statistics');
+            }
+        }
+        fetchStats();
+    }, [token]);
 
     async function withdrawApplication(appId) {
       if(!window.confirm('Are you sure you want to withdraw this application?')) return;
@@ -76,7 +119,6 @@ function Applications() {
     function renderTimeline(currentStatus) {
         const steps = ['Applied', 'Under Review', 'Interview', 'Offered'];
 
-        // Handle terminal states explicitly
         if (currentStatus === 'Rejected' || currentStatus === 'Withdrawn') {
             return (
                 <p className="muted" style={{ fontSize: 14 }}>This application is closed.</p>
@@ -100,9 +142,19 @@ function Applications() {
         );
     }
 
-    const displayedApplications = filteredStatus === 'All'
-      ? applications
-      : applications.filter(app => (app.status || 'Applied') === filteredStatus);
+    const displayedApplications = applications
+      .filter(app => {
+        const status = app.status || 'Applied';
+        if (filteredStatus === 'Pending') return status === 'Applied' || status === 'Under Review';
+        return filteredStatus === 'All' || status === filteredStatus;
+      })
+      .filter(app => {
+        const query = search.trim().toLowerCase();
+        if (!query) return true;
+        return `${app.job?.title || ''} ${app.job?.company || ''}`.toLowerCase().includes(query);
+      });
+    const visibleWeeklyApplications = stats.weeklyApplications.slice(-activityWeeks);
+    const weeklyMaxCount = Math.max(...visibleWeeklyApplications.map((week) => week.count), 1);
 
     if (loading) return <div className="page"><p className="muted">Loading your applications...</p></div>;
     if (message) return <div className="page narrow"><h2>{message}</h2></div>;
@@ -115,7 +167,93 @@ function Applications() {
         <span className="eyebrow">Track your progress</span>
         <h1>My Job Applications</h1>
 
+        <section className="application-dashboard" aria-label="Application statistics">
+          <div className="application-stat-tiles">
+            {[
+              { label: 'Total', value: stats.total, filter: 'All' },
+              { label: 'Pending', value: stats.pending, filter: 'Pending' },
+              { label: 'Interview', value: stats.statuses.Interview, filter: 'Interview' },
+              { label: 'Offered', value: stats.statuses.Offered, filter: 'Offered' },
+              { label: 'Rejected', value: stats.statuses.Rejected, filter: 'Rejected' }
+            ].map((tile) => (
+              <button
+                type="button"
+                key={tile.label}
+                className={`card application-stat${filteredStatus === tile.filter ? ' selected' : ''}`}
+                aria-pressed={filteredStatus === tile.filter}
+                onClick={() => setFilteredStatus(tile.filter)}
+              >
+                <span>{tile.label}</span>
+                <strong>{tile.value}</strong>
+              </button>
+            ))}
+          </div>
+          <div className="card application-chart" aria-label="Applications by status">
+            <h2>Status breakdown</h2>
+            {Object.entries(stats.statuses).map(([status, count]) => {
+              const percentage = stats.total ? (count / stats.total) * 100 : 0;
+              return (
+                <div className="application-chart-row" key={status}>
+                  <span>{status}</span>
+                  <div
+                    className="application-chart-track"
+                    role="img"
+                    aria-label={`${status}: ${count}`}
+                  >
+                    <span style={{ width: `${percentage}%` }} />
+                  </div>
+                  <strong>{count}</strong>
+                </div>
+              );
+            })}
+          </div>
+          <section className="card application-activity" aria-label="Application activity">
+            <div className="application-activity-heading">
+              <div>
+                <h2>Application activity</h2>
+                <p className="muted">Response rate: <strong>{stats.responseRate}%</strong></p>
+                <p className="muted">This week: <strong>{stats.weeklyApplications[stats.weeklyApplications.length - 1]?.count || 0}</strong> applications</p>
+              </div>
+              <div className="application-range-toggle" role="group" aria-label="Activity chart range">
+                {[4, 12].map((weeks) => (
+                  <button
+                    type="button"
+                    key={weeks}
+                    className={`btn small${activityWeeks === weeks ? ' primary' : ''}`}
+                    aria-pressed={activityWeeks === weeks}
+                    onClick={() => setActivityWeeks(weeks)}
+                  >
+                    {weeks} weeks
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="weekly-chart" role="img" aria-label={`Applications per week, last ${activityWeeks} weeks`}>
+              {visibleWeeklyApplications.map((week) => {
+                const date = new Date(`${week.weekStarting}T00:00:00Z`);
+                return (
+                  <div className="weekly-chart-column" key={week.weekStarting} aria-label={`${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })}: ${week.count}`}>
+                    <strong>{week.count}</strong>
+                    <div className="weekly-chart-bar-track">
+                      <span style={{ height: `${(week.count / weeklyMaxCount) * 100}%` }} />
+                    </div>
+                    <small>{date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })}</small>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </section>
+
         <div className="filter-row">
+          <label htmlFor="history-search">Search:</label>
+          <input
+            id="history-search"
+            type="search"
+            placeholder="Search job title or company"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           <label htmlFor="status-filter">Filter by Status:</label>
           <select
             id="status-filter"
@@ -123,6 +261,7 @@ function Applications() {
             onChange={(e) => setFilteredStatus(e.target.value)}
           >
             <option value="All">All Statuses ({applications.length})</option>
+            <option value="Pending">Pending ({stats.pending})</option>
             <option value="Applied">Applied</option>
             <option value="Under Review">Under Review</option>
             <option value="Interview">Interview</option>
@@ -132,7 +271,13 @@ function Applications() {
           </select>
         </div>
 
-        {displayedApplications.length === 0 ? (
+        {applications.length === 0 ? (
+          <div className="card application-empty">
+            <h2>No applications yet</h2>
+            <p className="muted">Start your job search and your applications will appear here.</p>
+            <Link className="btn primary" to="/jobs">Browse jobs</Link>
+          </div>
+        ) : displayedApplications.length === 0 ? (
           <div className="card" style={{ padding: 28, textAlign: 'center' }}>
             <p className="muted">No applications match the selected filter. <Link to="/jobs">Browse jobs →</Link></p>
           </div>
@@ -159,6 +304,18 @@ function Applications() {
                     <p><strong>CV Used:</strong> {app.resumeFilename || 'Default CV'}</p>
                     {app.coverLetterFilename && <p><strong>Cover Letter:</strong> Attached</p>}
                   </div>
+
+                  {app.interview && (
+                    <div className="notice" style={{ textAlign: 'left' }}>
+                      <strong>Interview:</strong> {new Date(app.interview.scheduledAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                      <br />
+                      <strong>Where:</strong>{' '}
+                      {app.interview.locationOrLink.startsWith('http')
+                        ? <a href={app.interview.locationOrLink} target="_blank" rel="noopener noreferrer">{app.interview.locationOrLink}</a>
+                        : app.interview.locationOrLink}
+                      {app.interview.message && <><br /><strong>Message:</strong> {app.interview.message}</>}
+                    </div>
+                  )}
 
                   {canWithdraw && (
                     <div className="posting-actions">
