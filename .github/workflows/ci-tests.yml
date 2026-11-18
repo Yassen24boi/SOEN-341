@@ -83,10 +83,10 @@ jobs:
 
       - name: Verify MongoDB connection
         run: |
-          node -e 'const mongoose = require("mongoose"); mongoose.connect(process.env.DATABASE_URL, { serverSelectionTimeoutMS: 10000 }).then(async () => { console.log("CI MongoDB connection successful"); await mongoose.disconnect(); }).catch(err => { console.error("CI MongoDB connection failed:", err.message); process.exit(1); })'
+         node -e 'const mongoose = require("mongoose"); mongoose.connect(process.env.DATABASE_URL, { serverSelectionTimeoutMS: 10000 }).then(async () => { console.log("CI MongoDB connection successful"); await mongoose.disconnect(); }).catch(err => { console.error("CI MongoDB connection failed:", err.message); process.exit(1); })'
 
-      - name: Debug recruiter tests
-        run: npx jest tests/Recruiterjobs.test.js --runInBand --detectOpenHandles --forceExit
+      - name: Debug MongoDB inside Jest
+        run: npx jest tests/mongoConnection.test.js --runInBand --forceExit
 
       - name: Upload backend coverage report
         if: always()
