@@ -545,6 +545,8 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
           ? {
               total: 0,
               pending: 0,
+              responseRate: 0,
+              weeklyApplications: [],
               statuses: {
                 Applied: 0,
                 'Under Review': 0,
@@ -783,6 +785,58 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
 
       expect(await screen.findByText('No applications yet')).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Browse jobs' })).toHaveAttribute('href', '/jobs');
+    });
+
+    it('AT-27.1/27.2/27.3: shows weekly activity, response rate, this-week count, and range toggle', async () => {
+      const currentWeek = new Date();
+      currentWeek.setUTCHours(0, 0, 0, 0);
+      currentWeek.setUTCDate(currentWeek.getUTCDate() - ((currentWeek.getUTCDay() + 6) % 7));
+      currentWeek.setUTCDate(currentWeek.getUTCDate() - 11 * 7);
+      const weeklyApplications = Array.from({ length: 12 }, (_, index) => {
+        const weekStarting = new Date(currentWeek);
+        weekStarting.setUTCDate(weekStarting.getUTCDate() + index * 7);
+        return {
+          weekStarting: weekStarting.toISOString().slice(0, 10),
+          count: index === 10 ? 2 : index === 11 ? 3 : 0
+        };
+      });
+      const stats = {
+        total: 10,
+        pending: 8,
+        responseRate: 20,
+        weeklyApplications,
+        statuses: {
+          Applied: 8,
+          'Under Review': 0,
+          Interview: 2,
+          Offered: 0,
+          Rejected: 0,
+          Withdrawn: 0
+        }
+      };
+      fetch.mockImplementation((url) => Promise.resolve({
+        ok: true,
+        json: async () => url === 'http://localhost:5000/api/applications/me/stats' ? stats : []
+      }));
+
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText(/Response rate:/)).toHaveTextContent('20%');
+      expect(screen.getByText(/This week:/).parentElement).toHaveTextContent('3');
+      const chart = screen.getByRole('img', { name: 'Applications per week, last 12 weeks' });
+      expect(chart.querySelectorAll('.weekly-chart-column')).toHaveLength(12);
+      expect(chart.querySelector('[aria-label$=": 2"]')).toBeInTheDocument();
+      expect(chart.querySelector('[aria-label$=": 3"]')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: '4 weeks' }));
+      const fourWeekChart = screen.getByRole('img', { name: 'Applications per week, last 4 weeks' });
+      expect(fourWeekChart.querySelectorAll('.weekly-chart-column')).toHaveLength(4);
+      expect(fourWeekChart.querySelector('[aria-label$=": 2"]')).toBeInTheDocument();
+      expect(fourWeekChart.querySelector('[aria-label$=": 3"]')).toBeInTheDocument();
     });
 
     it('should successfully trigger a PATCH request to withdraw an application when the Withdraw button is clicked and confirmed', async () => {
