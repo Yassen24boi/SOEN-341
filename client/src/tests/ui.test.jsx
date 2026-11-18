@@ -653,6 +653,44 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
       });
     });
 
+    it('AT-25.2: should search application history by company', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ([
+          {
+            _id: 'google-app',
+            job: { title: 'Software Engineer', company: 'Google' },
+            status: 'Interview',
+            createdAt: '2026-06-03T00:00:00.000Z'
+          },
+          {
+            _id: 'microsoft-app',
+            job: { title: 'Developer', company: 'Microsoft' },
+            status: 'Applied',
+            createdAt: '2026-06-02T00:00:00.000Z'
+          }
+        ]),
+      });
+
+      render(
+        <MemoryRouter>
+          <Applications />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Software Engineer')).toBeInTheDocument();
+        expect(screen.getByText('Developer')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByLabelText(/Search/i), { target: { value: 'Google' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Software Engineer')).toBeInTheDocument();
+        expect(screen.queryByText('Developer')).not.toBeInTheDocument();
+      });
+    });
+
     it('should successfully trigger a PATCH request to withdraw an application when the Withdraw button is clicked and confirmed', async () => {
       fetch.mockResolvedValueOnce({
         ok: true,

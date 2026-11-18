@@ -60,8 +60,8 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
     // 4. Update and save the status
     const previousStatus = application.status;
 
-  application.status = status;
-  await application.save();
+    application.status = status;
+    await application.save();
 
   if (isRecruiter && !isApplicant && previousStatus !== status) {
   try {

@@ -6,6 +6,7 @@ const API = 'http://localhost:5000/api/applications';
 function Applications() {
     const [applications, setApplications] = useState([]);
     const [filteredStatus, setFilteredStatus] = useState('All');
+    const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
@@ -76,7 +77,6 @@ function Applications() {
     function renderTimeline(currentStatus) {
         const steps = ['Applied', 'Under Review', 'Interview', 'Offered'];
 
-        // Handle terminal states explicitly
         if (currentStatus === 'Rejected' || currentStatus === 'Withdrawn') {
             return (
                 <p className="muted" style={{ fontSize: 14 }}>This application is closed.</p>
@@ -100,9 +100,13 @@ function Applications() {
         );
     }
 
-    const displayedApplications = filteredStatus === 'All'
-      ? applications
-      : applications.filter(app => (app.status || 'Applied') === filteredStatus);
+    const displayedApplications = applications
+      .filter(app => filteredStatus === 'All' || (app.status || 'Applied') === filteredStatus)
+      .filter(app => {
+        const query = search.trim().toLowerCase();
+        if (!query) return true;
+        return `${app.job?.title || ''} ${app.job?.company || ''}`.toLowerCase().includes(query);
+      });
 
     if (loading) return <div className="page"><p className="muted">Loading your applications...</p></div>;
     if (message) return <div className="page narrow"><h2>{message}</h2></div>;
@@ -116,6 +120,14 @@ function Applications() {
         <h1>My Job Applications</h1>
 
         <div className="filter-row">
+          <label htmlFor="history-search">Search:</label>
+          <input
+            id="history-search"
+            type="search"
+            placeholder="Search job title or company"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           <label htmlFor="status-filter">Filter by Status:</label>
           <select
             id="status-filter"
@@ -159,8 +171,7 @@ function Applications() {
                     <p><strong>CV Used:</strong> {app.resumeFilename || 'Default CV'}</p>
                     {app.coverLetterFilename && <p><strong>Cover Letter:</strong> Attached</p>}
                   </div>
-                  
-                  {/* US-30 (Task 30.3): interview details sent by the recruiter */}
+
                   {app.interview && (
                     <div className="notice" style={{ textAlign: 'left' }}>
                       <strong>Interview:</strong> {new Date(app.interview.scheduledAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
@@ -172,7 +183,6 @@ function Applications() {
                       {app.interview.message && <><br /><strong>Message:</strong> {app.interview.message}</>}
                     </div>
                   )}
-
 
                   {canWithdraw && (
                     <div className="posting-actions">

@@ -256,5 +256,6 @@ describe('CareerConnect Job Application Tests', () => {
             expect(res.statusCode).toEqual(403);
             expect(res.body.message).toEqual('Applicants can only update their application status to Withdrawn.');
         });
+
     });
 });
