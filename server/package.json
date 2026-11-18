@@ -1,3 +1,4 @@
+
 {
   "name": "server",
   "version": "1.0.0",
@@ -10,6 +11,22 @@
   },
   "jest": {
     "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "routes/**/*.js",
+      "middleware/**/*.js",
+      "models/**/*.js",
+      "!**/node_modules/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    }
+  },
+  "jest": {
     "collectCoverageFrom": [
       "routes/**/*.js",
       "middleware/**/*.js",
