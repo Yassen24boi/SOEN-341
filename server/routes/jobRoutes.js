@@ -313,9 +313,7 @@ router.post('/:id/apply', requireAuth, upload.single('coverLetterFile'), async (
       job: job._id,
       applicant: req.userId,
       resumeFilename: resumeFilename || null,
-      coverLetterFilename: coverLetterFilename,
-      status: 'Applied',
-      statusHistory: [{ status: 'Applied', date: new Date() }]
+      coverLetterFilename: coverLetterFilename
 
     })
     try {

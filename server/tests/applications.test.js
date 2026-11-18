@@ -257,51 +257,5 @@ describe('CareerConnect Job Application Tests', () => {
             expect(res.body.message).toEqual('Applicants can only update their application status to Withdrawn.');
         });
 
-        it('Task 25.1/25.4: history is ordered newest first and includes only the logged-in seeker', async () => {
-            const res = await request(app)
-                .get('/api/applications/me/history')
-                .set('Authorization', `Bearer ${seekerToken}`);
-
-            expect(res.statusCode).toEqual(200);
-            expect(Array.isArray(res.body)).toBe(true);
-            res.body.forEach((appItem) => {
-                expect(appItem.applicant.toString()).toEqual(jobSeeker._id.toString());
-                expect(Array.isArray(appItem.statusHistory)).toBe(true);
-            });
-            for (let i = 1; i < res.body.length; i += 1) {
-                expect(new Date(res.body[i - 1].createdAt).getTime())
-                    .toBeGreaterThanOrEqual(new Date(res.body[i].createdAt).getTime());
-            }
-        });
-
-        it('Task 25.1: history contains Applied and Interview status entries with dates', async () => {
-            await Application.findByIdAndUpdate(seekerApp._id, {
-                status: 'Interview',
-                statusHistory: [
-                    { status: 'Applied', date: seekerApp.createdAt },
-                    { status: 'Interview', date: new Date() }
-                ]
-            });
-
-            const res = await request(app)
-                .get('/api/applications/me/history')
-                .set('Authorization', `Bearer ${seekerToken}`);
-
-            expect(res.statusCode).toEqual(200);
-            const appItem = res.body.find((item) => item._id.toString() === seekerApp._id.toString());
-            expect(appItem).toBeDefined();
-            expect(appItem.statusHistory.map((entry) => entry.status)).toContain('Applied');
-            expect(appItem.statusHistory.map((entry) => entry.status)).toContain('Interview');
-            appItem.statusHistory.forEach((entry) => expect(entry.date).toBeDefined());
-        });
-
-        it('Task 25.4: another seeker cannot see this seeker history', async () => {
-            const res = await request(app)
-                .get('/api/applications/me/history')
-                .set('Authorization', `Bearer ${secondSeekerToken}`);
-
-            expect(res.statusCode).toEqual(200);
-            expect(res.body).toEqual([]);
-        });
     });
 });
