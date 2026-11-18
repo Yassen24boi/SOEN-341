@@ -34,33 +34,86 @@ describe('CareerConnect Recruiter Dashboard Tests (Sprint 2: US-16 to US-19)', (
     });
 
     beforeAll(async () => {
-        if (mongoose.connection.readyState === 0) {
-            await mongoose.connect(process.env.DATABASE_URL || 'mongodb://localhost:27017/careerconnect_test');
-        }
-        const secret = process.env.JWT_SECRET || 'secret_key';
-        const make = (name, role) => User.create({
-            fullName: name,
-            email: `rec_${name.replace(/\s/g, '')}_${RUN_ID}@example.com`,
-            password: 'password123',
-            role
-        });
-        recruiterA = await make('Recruiter A', 'recruiter');
-        recruiterB = await make('Recruiter B', 'recruiter');
-        seeker = await make('Seeker', 'jobseeker');
-        tokenA = jwt.sign({ userId: recruiterA._id, role: 'recruiter' }, secret, { expiresIn: '1h' });
-        tokenB = jwt.sign({ userId: recruiterB._id, role: 'recruiter' }, secret, { expiresIn: '1h' });
-        seekerToken = jwt.sign({ userId: seeker._id, role: 'jobseeker' }, secret, { expiresIn: '1h' });
+    console.log('MongoDB state:', mongoose.connection.readyState);
+    console.log('Database URL configured:', !!process.env.DATABASE_URL);
+
+    if (mongoose.connection.readyState === 0) {
+        console.log('Attempting MongoDB connection...');
+
+        await mongoose.connect(
+            process.env.DATABASE_URL || 'mongodb://127.0.0.1:27017/careerconnect_test',
+            { serverSelectionTimeoutMS: 5000 }
+        );
+    }
+
+    console.log('MongoDB connected, creating test users...');
+
+    const secret = process.env.JWT_SECRET || 'secret_key';
+
+    const make = (name, role) => User.create({
+        fullName: name,
+        email: `rec_${name.replace(/\s/g, '')}_${RUN_ID}@example.com`,
+        password: 'password123',
+        role
     });
 
-    afterAll(async () => {
-        const users = await User.find({ email: new RegExp(`^rec_.*_${RUN_ID}@example\\.com$`) });
-        const ids = users.map((u) => u._id);
-        const jobs = await Job.find({ recruiter: { $in: ids } });
-        await Application.deleteMany({ job: { $in: jobs.map((j) => j._id) } });
-        await Job.deleteMany({ recruiter: { $in: ids } });
-        await User.deleteMany({ _id: { $in: ids } });
-        await mongoose.connection.close();
+    recruiterA = await make('Recruiter A', 'recruiter');
+    recruiterB = await make('Recruiter B', 'recruiter');
+    seeker = await make('Seeker', 'jobseeker');
+
+    tokenA = jwt.sign(
+        { userId: recruiterA._id, role: 'recruiter' },
+        secret,
+        { expiresIn: '1h' }
+    );
+
+    tokenB = jwt.sign(
+        { userId: recruiterB._id, role: 'recruiter' },
+        secret,
+        { expiresIn: '1h' }
+    );
+
+    seekerToken = jwt.sign(
+        { userId: seeker._id, role: 'jobseeker' },
+        secret,
+        { expiresIn: '1h' }
+    );
     });
+
+
+    afterAll(async () => {
+    if (mongoose.connection.readyState !== 1) {
+        console.log('Skipping cleanup: MongoDB not connected');
+        return;
+    }
+
+    try {
+        const users = await User.find({
+            email: new RegExp(`^rec_.*_${RUN_ID}@example\\.com$`)
+        });
+
+        const ids = users.map((u) => u._id);
+
+        const jobs = await Job.find({
+            recruiter: { $in: ids }
+        });
+
+        await Application.deleteMany({
+            job: { $in: jobs.map((j) => j._id) }
+        });
+
+        await Job.deleteMany({
+            recruiter: { $in: ids }
+        });
+
+        await User.deleteMany({
+            _id: { $in: ids }
+        });
+    } finally {
+        await mongoose.disconnect();
+    }
+    });
+
 
     describe('POST /api/jobs - Create a job posting (US-16)', () => {
         it('should let a recruiter create a posting that belongs to them (AT-16.1)', async () => {
