@@ -1,11 +1,11 @@
 const request = require('supertest');
-const app = require('../server');
-const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+
 const User = require('../models/User');
 const Job = require('../models/Job');
 const Application = require('../models/Application');
-
+const app = require('../server');
 // The shared cloud database can be slow, so allow 30 seconds
 jest.setTimeout(30000);
 
