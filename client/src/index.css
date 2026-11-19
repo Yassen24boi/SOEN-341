@@ -65,7 +65,7 @@ textarea{resize:vertical}
 label{font-weight:600;font-size:14px}
 
 /* shared components */
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding: 20px 24px}
 .pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:600;white-space:nowrap;background:var(--accent-soft);color:var(--accent-deep)}
 .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .pill.good{background:var(--good-soft);color:var(--good)}

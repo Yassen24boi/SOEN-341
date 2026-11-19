@@ -49,7 +49,12 @@ function RecruiterHome() {
   useEffect(() => {
     if (!token) navigate('/login')
     //eslint-disable-next-line react-hooks/set-state-in-effect
-    else loadJobs()
+    else {
+      loadJobs()
+      if (location.state?.openJobId) {
+        loadApplications(location.state.openJobId, {status: '', sort: 'newest', from: '', to: '' })
+      }
+    }
     // eslint-disable-next-line
   }, [])
 
@@ -245,70 +250,81 @@ function RecruiterHome() {
               {applications.length === 0 && (
                 <p className="muted">{(appStatus || appFrom || appTo) ? 'No applications match this filter.' : 'No applications yet.'}</p>
               )}
-              {applications.map((a) => (
-                <div key={a._id} className="app-row">
-                  <div><strong>{a.applicant?.name || a.applicant?.fullName || a.applicant?.email}</strong></div>
-                  <div className="muted">{a.applicant?.email}</div>
-                  {a.applicant?.headline && <div className="muted">{a.applicant.headline}</div>}
-                  <div className="muted" style={{ fontSize: 13 }}>Applied on {new Date(a.createdAt).toLocaleDateString()}</div>
+              {applications.map((a) => {
+                const openApplication = () =>
+                  navigate(`/recruiter/applications/${a._id}`, {
+                    state: {
+                      filteredIds: applications.map((item) => item._id),
+                      jobId: job._id,
+                    },
+                  })
 
-                  <div className="status-row">
-                    <label htmlFor={`status-${a._id}`}>Status</label>
-                    <select
-                      id={`status-${a._id}`}
-                      value={a.status || 'Applied'}
-                      onChange={(e) => (e.target.value === 'Interview' ? setInterviewFor(a._id) : updateApplicationStatus(a._id, e.target.value))}
-                    >
-                      <option value="Applied">Applied</option>
-                      <option value="Under Review">Under Review</option>
-                      <option value="Interview">Interview</option>
-                      <option value="Offered">Offered</option>
-                      <option value="Rejected">Rejected</option>
-                      {a.status === 'Withdrawn' && <option value="Withdrawn" disabled>Withdrawn</option>}
-                    </select>
+                return (
+                  <div
+                    key={a._id}
+                    className="card"
+                    role="button"
+                    tabIndex={0}
+                    onClick={openApplication}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        openApplication()
+                      }
+                    }}
+                    style={{ cursor: 'pointer', marginBottom: 10 }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+                      <div>
+                        <div><strong>{a.applicant?.name || a.applicant?.fullName || a.applicant?.email}</strong></div>
+                        <div className="muted">{a.applicant?.email}</div>
+                        {a.applicant?.headline && <div className="muted">{a.applicant.headline}</div>}
+                        <div className="muted" style={{ fontSize: 13 }}>
+                          Applied on {new Date(a.createdAt).toLocaleDateString()}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+                          <span className="tag">{a.resumeFilename ? 'CV attached' : 'No CV'}</span>
+                          <span className="tag">{a.coverLetterFilename || a.coverLetter ? 'Cover letter attached' : 'No cover letter'}</span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                        <div className="status-row" onClick={(e) => e.stopPropagation()}>
+                          <label htmlFor={`status-${a._id}`}>Status</label>
+                          <select
+                            id={`status-${a._id}`}
+                            value={a.status || 'Applied'}
+                            onChange={(e) => (e.target.value === 'Interview' ? setInterviewFor(a._id) : updateApplicationStatus(a._id, e.target.value))}
+                          >
+                            <option value="Applied">Applied</option>
+                            <option value="Under Review">Under Review</option>
+                            <option value="Interview">Interview</option>
+                            <option value="Offered">Offered</option>
+                            <option value="Rejected">Rejected</option>
+                            {a.status === 'Withdrawn' && <option value="Withdrawn" disabled>Withdrawn</option>}
+                          </select>
+                        </div>
+                        <span className="muted" style={{ fontSize: 13 }}>Review application →</span>
+                      </div>
+                    </div>
+
+                    {interviewFor === a._id && (
+                      <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 12 }}>
+                        <InterviewForm
+                          applicationId={a._id}
+                          candidateName={a.applicant?.fullName}
+                          onCancel={() => setInterviewFor(null)}
+                          onSent={() => {
+                            setInterviewFor(null)
+                            setApplications((prev) => prev.map((app) => (app._id === a._id ? { ...app, status: 'Interview' } : app)))
+                            loadJobs()
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
-                  
-                  {/* US-30: picking "Interview" opens the invitation form instead of changing the status right away */}
-                  {interviewFor === a._id && (
-                    <InterviewForm
-                      applicationId={a._id}
-                      candidateName={a.applicant?.fullName}
-                      onCancel={() => setInterviewFor(null)}
-                      onSent={() => {
-                        setInterviewFor(null)
-                        setApplications((prev) => prev.map((app) => (app._id === a._id ? { ...app, status: 'Interview' } : app)))
-                        loadJobs()
-                      }}
-                    />
-                  )}
-
-
-                  {a.resumeFilename ? (
-                    <a
-                      href={`http://localhost:5000/uploads/${a.resumeFilename}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download
-                    >
-                      Download resume ({a.resumeFilename})
-                    </a>
-                  ) : (
-                    <div className="muted" style={{ fontSize: 13 }}>No specific resume file attached</div>
-                  )}
-                  {a.coverLetterFilename ? (
-                    <a
-                      href={`http://localhost:5000/uploads/${a.coverLetterFilename}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download
-                    >
-                      Download cover letter ({a.coverLetterFilename})
-                    </a>
-                  ) : (
-                    <div className="muted" style={{ fontSize: 13 }}>No cover letter attached</div>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

@@ -80,7 +80,13 @@ describe('CareerConnect Job Application Tests', () => {
 
     afterAll(async () => {
         const testUsers = await User.find({
-            email: { $in: [`recruiter_app_${RUN_ID}@example.com`, `seeker_app_${RUN_ID}@example.com`, `seeker2_app_${RUN_ID}@example.com`, `stats_app_${RUN_ID}@example.com`, `activity_app_${RUN_ID}@example.com`] }
+            email: { $in: [
+                            `recruiter_app_${RUN_ID}@example.com`,
+                            `other_recruiter_app_${RUN_ID}@example.com`, 
+                            `seeker_app_${RUN_ID}@example.com`, 
+                            `seeker2_app_${RUN_ID}@example.com`, 
+                            `stats_app_${RUN_ID}@example.com`, 
+                            `activity_app_${RUN_ID}@example.com`] }
         });
         const testUserIds = testUsers.map((user) => user._id);
         await Application.deleteMany({ applicant: { $in: testUserIds } });
@@ -162,7 +168,11 @@ describe('CareerConnect Job Application Tests', () => {
         let secondSeeker;
         let secondSeekerToken;
         let recruiterToken;
+        let otherRecruiter;
+        let otherRecruiterToken;
         let seekerApp;
+        let reviewJob;
+        let reviewApp;
         let statsSeeker;
         let statsToken;
         let activitySeeker;
@@ -371,6 +381,107 @@ describe('CareerConnect Job Application Tests', () => {
             expect(res.statusCode).toEqual(403);
             expect(res.body.message).toEqual('Applicants can only update their application status to Withdrawn.');
         });
+    });
 
+    describe('GET /api/applications/:id - Candidate Application Review (US-23)', () => {
+        let us23RecruiterToken;
+        let us23OtherRecruiterToken;
+        let us23ReviewApp;
+
+        beforeAll(async () => {
+            const secret = process.env.JWT_SECRET || 'secret_key';
+
+            us23RecruiterToken = jwt.sign(
+                { userId: recruiter._id, role: 'recruiter' },
+                secret,
+                { expiresIn: '1h' }
+            );
+
+            const otherRecruiter = await User.create({
+                fullName: 'Other Recruiter',
+                email: `other_recruiter_app_${RUN_ID}@example.com`,
+                password: 'password123',
+                role: 'recruiter'
+            });
+            us23OtherRecruiterToken = jwt.sign(
+                { userId: otherRecruiter._id, role: 'recruiter' },
+                secret,
+                { expiresIn: '1h' }
+            );
+
+            const reviewJob = await Job.create({
+                recruiter: recruiter._id,
+                company: 'Test Company',
+                title: 'Senior Developer Review Job',
+                location: APP_CITY,
+                description: 'Job for US-23 candidate review tests.',
+                status: 'open'
+            });
+
+            us23ReviewApp = await Application.create({
+                job: reviewJob._id,
+                applicant: jobSeeker._id,
+                resumeFilename: 'resume1.pdf',
+                coverLetterFilename: 'cover_letter1.pdf',
+                status: 'Applied'
+            });
+        });
+
+        it('AT-23.1 / Task 23.1: returns candidate profile, attached CV, and cover letter for the posting recruiter', async () => {
+            const res = await request(app)
+                .get(`/api/applications/${us23ReviewApp._id}`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`);
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body._id).toEqual(us23ReviewApp._id.toString());
+            expect(res.body.resumeFilename).toEqual('resume1.pdf');
+            expect(res.body.coverLetterFilename).toEqual('cover_letter1.pdf');
+
+            expect(res.body).toHaveProperty('applicant');
+            expect(res.body.applicant.fullName).toEqual('App Seeker');
+            expect(res.body.applicant.email).toEqual(`seeker_app_${RUN_ID}@example.com`);
+            expect(res.body.applicant).not.toHaveProperty('password');
+
+            expect(res.body).toHaveProperty('job');
+            expect(res.body.job.title).toEqual('Senior Developer Review Job');
+        });
+
+        it('AT-23.2 / Task 23.4: rejects a different recruiter with status 403', async () => {
+            const res = await request(app)
+                .get(`/api/applications/${us23ReviewApp._id}`)
+                .set('Authorization', `Bearer ${us23OtherRecruiterToken}`);
+
+            expect(res.statusCode).toEqual(403);
+            expect(res.body.message).toEqual('Not authorized to view this application');
+        });
+
+        it('Task 23.4: rejects a job seeker with status 403', async () => {
+            const res = await request(app)
+                .get(`/api/applications/${us23ReviewApp._id}`)
+                .set('Authorization', `Bearer ${seekerToken}`);
+
+            expect(res.statusCode).toEqual(403);
+            expect(res.body.message).toEqual('Recruiter access required');
+        });
+
+        it('Task 23.4: rejects unauthenticated requests with status 401', async () => {
+            const res = await request(app)
+                .get(`/api/applications/${us23ReviewApp._id}`);
+
+            expect(res.statusCode).toEqual(401);
+        });
+
+        it('Task 23.1: returns 404 for an invalid or non-existent application ID', async () => {
+            const invalidRes = await request(app)
+                .get('/api/applications/invalid-object-id')
+                .set('Authorization', `Bearer ${us23RecruiterToken}`);
+            expect(invalidRes.statusCode).toEqual(404);
+
+            const fakeId = new mongoose.Types.ObjectId();
+            const missingRes = await request(app)
+                .get(`/api/applications/${fakeId}`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`);
+            expect(missingRes.statusCode).toEqual(404);
+        });
     });
 });
