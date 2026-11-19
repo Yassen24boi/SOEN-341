@@ -7,6 +7,7 @@ const Application = require('../models/Application');
 const Job = require('../models/Job');
 const Notification = require('../models/Notification');
 const requireAuth = require('../middleware/auth');
+const User = require('../models/User')
 
 const VALID_STATUSES = [
   'Applied',
@@ -139,6 +140,35 @@ router.get('/', requireAuth, async (req, res) => {
     });
   }
 });
+
+router.get('/:id', requireAuth, async (req, res) => {
+  try{
+    const requester = await User.findById(req.userId).select('role').lean();
+    if ( !requester || requester.role !== 'recruiter') {
+      return res.status(403).json({message: 'Recruiter access required'})
+    }
+
+    if(!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({message: 'Application not found'})
+    }
+
+    const application = await Application.findById(req.params.id)
+      .populate('applicant', '-password')
+      .populate('job', 'title company recruiter status')
+
+    if (!application || !application.job) {
+      return res.status(404).json({message: 'Application not found'})
+    }
+
+    if (String(application.job.recruiter) !== String(req.userId)) {
+      return res.status(403).json({message: 'Not authorized to view this application'})
+    }
+
+    res.json(application)
+  } catch (err) {
+    res.status(500).json({message:'Could not load application'})
+  }
+})
 
 // PATCH /api/applications/:id/status
 // Recruiters can update application statuses.
