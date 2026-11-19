@@ -85,7 +85,7 @@ function ApplicationDetails(){
         return () => {
             cancelled = true
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line
     }, [applicationId])
 
     async function handleStatusChange(newStatus) {
