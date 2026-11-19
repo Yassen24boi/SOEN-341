@@ -37,24 +37,38 @@ function RecruiterHome() {
     // US-30: which application's interview form is open
   const [interviewFor, setInterviewFor] = useState(null)
 
-
-  async function loadJobs() {
-    const res = await fetch(`${API}/mine`, { headers })
-    if (res.status === 401) return navigate('/login')
-    const data = await res.json()
-    if (!res.ok) return setMessage(data.message || 'Could not load postings')
-    setJobs(data)
-  }
-
   useEffect(() => {
-    if (!token) navigate('/login')
-    //eslint-disable-next-line react-hooks/set-state-in-effect
-    else {
+    if (!token) {
+      navigate('/login')
+      return
+    }
+
+    async function loadApplications(jobId, filters) {
+      const params = new URLSearchParams()
+      if (filters.status) params.set('status', filters.status)
+      if (filters.sort) params.set('sort', filters.sort)
+      if (filters.from) params.set('from', filters.from)
+      if (filters.to) params.set('to', filters.to)
+      const res = await fetch(`${API}/${jobId}/applications?${params}`, { headers })
+      const data = await res.json()
+      if (!res.ok) return setMessage(data.message || 'Could not load applications')
+      setApplications(data)
+      setApplicationsFor(jobId)
+    }
+
+    async function loadJobs() {
+      const res = await fetch(`${API}/mine`, { headers })
+      if (res.status === 401) return navigate('/login')
+      const data = await res.json()
+      if (!res.ok) return setMessage(data.message || 'Could not load postings')
+      setJobs(data)
+    }  
+    
       loadJobs()
       if (location.state?.openJobId) {
         loadApplications(location.state.openJobId, {status: '', sort: 'newest', from: '', to: '' })
       }
-    }
+    
     // eslint-disable-next-line
   }, [])
 
@@ -82,19 +96,6 @@ function RecruiterHome() {
     await fetch(`${API}/${job._id}`, { method: 'DELETE', headers })
     if (applicationsFor === job._id) setApplicationsFor(null)
     loadJobs()
-  }
-
-  async function loadApplications(jobId, filters) {
-    const params = new URLSearchParams()
-    if (filters.status) params.set('status', filters.status)
-    if (filters.sort) params.set('sort', filters.sort)
-    if (filters.from) params.set('from', filters.from)
-    if (filters.to) params.set('to', filters.to)
-    const res = await fetch(`${API}/${jobId}/applications?${params}`, { headers })
-    const data = await res.json()
-    if (!res.ok) return setMessage(data.message || 'Could not load applications')
-    setApplications(data)
-    setApplicationsFor(jobId)
   }
 
   function changeFilter(job, changes) {
