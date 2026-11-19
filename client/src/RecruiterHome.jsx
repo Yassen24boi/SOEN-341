@@ -37,13 +37,7 @@ function RecruiterHome() {
     // US-30: which application's interview form is open
   const [interviewFor, setInterviewFor] = useState(null)
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/login')
-      return
-    }
-
-    async function loadApplications(jobId, filters) {
+  async function loadApplications(jobId, filters) {
       const params = new URLSearchParams()
       if (filters.status) params.set('status', filters.status)
       if (filters.sort) params.set('sort', filters.sort)
@@ -56,19 +50,28 @@ function RecruiterHome() {
       setApplicationsFor(jobId)
     }
 
-    async function loadJobs() {
+  async function loadJobs() {
       const res = await fetch(`${API}/mine`, { headers })
       if (res.status === 401) return navigate('/login')
       const data = await res.json()
       if (!res.ok) return setMessage(data.message || 'Could not load postings')
       setJobs(data)
-    }  
-    
-      loadJobs()
+    } 
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login')
+      return
+    }
+
+    async function init() {
+      await loadJobs()
       if (location.state?.openJobId) {
-        loadApplications(location.state.openJobId, {status: '', sort: 'newest', from: '', to: '' })
+        await loadApplications(location.state.openJobId, {status: '', sort: 'newest', from: '', to: ''})
       }
-    
+    }
+
+    init() 
     // eslint-disable-next-line
   }, [])
 
