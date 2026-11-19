@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react'
+import { useEffect, useState} from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import InterviewForm from './Components/InterviewForm'
 
@@ -85,6 +85,7 @@ function ApplicationDetails(){
         return () => {
             cancelled = true
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [applicationId])
 
     async function handleStatusChange(newStatus) {
