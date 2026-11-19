@@ -114,6 +114,48 @@ function RecruiterHome() {
     changeFilter(job, { status: '', sort: 'newest', from: '', to: '' })
   }
 
+  const ALLOWED_RECRUITER_TRANSITIONS = {
+      Applied: ['Under Review', 'Interview', 'Rejected'],
+      'Under Review': ['Interview', 'Offered', 'Rejected'],
+      Interview: ['Offered', 'Rejected'],
+      Offered: [],
+      Rejected: [],
+      Withdrawn: []
+    };
+
+  function handleApplicationStatusSelect(app, nextStatus){
+    const currentStatus = app.status || 'Applied'
+    if(nextStatus === currentStatus) return
+
+    if (currentStatus === 'Withdrawn') {
+      alert('Cannot change the status o a withdrawn application.')
+      return
+    }
+
+    const allowedNext = ALLOWED_RECRUITER_TRANSITIONS[currentStatus] || []
+    if (!allowedNext.includes(nextStatus)) {
+      alert(`Cannot move application from ${currentStatus} to ${nextStatus}.`)
+      return
+    }
+
+    const candidateLabel = app.applicant?.name || app.applicant?.fullName || app.aplicant.email || 'this candidate'
+    const confirmed = window.confirm(
+      `Change ${candidateLabel}'s application status from "${currentStatus}" tp "${nextStatus}"?`
+    )
+    if (!confirmed) return
+
+    if(nextStatus === 'Interview') {
+      if(currentStatus === 'Offered' || currentStatus === 'Rejected' || currentStatus === 'Withdrawn'){
+        alert(`Cannot move an application from ${currentStatus} to Interview`)
+        return
+      }
+      setInterviewFor(app._id)
+      return
+    }
+
+    updateApplicationStatus(app._id, nextStatus)
+  }
+
   async function updateApplicationStatus(appId, newStatus) {
     try {
       const res = await fetch(`http://localhost:5000/api/applications/${appId}/status`, {
@@ -213,7 +255,8 @@ function RecruiterHome() {
                 <label htmlFor={`app-status-${job._id}`}>Filter by status</label>
                 <select
                   id={`app-status-${job._id}`}
-                  value={appStatus}
+                  value={appStatus || 'Applied'}
+                  disabled={appStatus === 'Withdrawn'}
                   onChange={(e) => changeFilter(job, { status: e.target.value })}
                 >
                   <option value="">All</option>
@@ -298,7 +341,8 @@ function RecruiterHome() {
                           <select
                             id={`status-${a._id}`}
                             value={a.status || 'Applied'}
-                            onChange={(e) => (e.target.value === 'Interview' ? setInterviewFor(a._id) : updateApplicationStatus(a._id, e.target.value))}
+                            disabled= {a.status === 'Withdrawn'}
+                            onChange={(e) => handleApplicationStatusSelect(a, e.target.value)}
                           >
                             <option value="Applied">Applied</option>
                             <option value="Under Review">Under Review</option>

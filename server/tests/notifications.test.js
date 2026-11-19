@@ -47,6 +47,8 @@ const sampleNotification = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+
+
 });
 
 describe('US-28: Notification Centre', () => {
@@ -219,6 +221,7 @@ describe('US-29: Application Status Notifications', () => {
       applicant: applicantId,
       job: jobId,
       status: 'Applied',
+      statusHistory: [],
       save: jest.fn().mockResolvedValue(true)
     };
 
@@ -312,6 +315,7 @@ describe('US-32: Recruiter Notifications', () => {
       applicant: applicantId,
       job: jobId,
       status: 'Applied',
+      statusHistory: [],
       save: jest.fn().mockResolvedValue(true)
     };
 

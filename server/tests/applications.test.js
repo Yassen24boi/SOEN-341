@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Job = require('../models/Job');
 const Application = require('../models/Application');
+const Notification = require('../models/Notification');
 
 // Allow 30 seconds for cloud database operations
 jest.setTimeout(30000);
@@ -92,6 +93,7 @@ describe('CareerConnect Job Application Tests', () => {
         await Application.deleteMany({ applicant: { $in: testUserIds } });
         await Job.deleteMany({ recruiter: { $in: testUserIds } });
         await User.deleteMany({ _id: { $in: testUserIds } });
+        await Notification.deleteMany({recipient: {$in: testUserIds}});
         await mongoose.connection.close();
     });
 
@@ -482,6 +484,231 @@ describe('CareerConnect Job Application Tests', () => {
                 .get(`/api/applications/${fakeId}`)
                 .set('Authorization', `Bearer ${us23RecruiterToken}`);
             expect(missingRes.statusCode).toEqual(404);
+        });
+    });
+
+    describe('US-23 & US-24 - Candidate Application Review, Stage Transitions & Status History', () => {
+        let us23RecruiterToken;
+        let us23OtherRecruiterToken;
+        let us23ReviewApp;
+
+        beforeEach(async () => {
+            const secret = process.env.JWT_SECRET || 'secret_key';
+
+            us23RecruiterToken = jwt.sign(
+                { userId: recruiter._id, role: 'recruiter' },
+                secret,
+                { expiresIn: '1h' }
+            );
+
+            const otherRecruiter = await User.create({
+                fullName: 'Other Recruiter',
+                email: `other_recruiter_us23_${RUN_ID}_${Date.now()}@example.com`,
+                password: 'password123',
+                role: 'recruiter'
+            });
+            us23OtherRecruiterToken = jwt.sign(
+                { userId: otherRecruiter._id, role: 'recruiter' },
+                secret,
+                { expiresIn: '1h' }
+            );
+
+            const reviewJob = await Job.create({
+                recruiter: recruiter._id,
+                company: 'Test Company',
+                title: 'Senior Developer Review Job',
+                location: APP_CITY,
+                description: 'Job for US-23 and US-24 candidate review tests.',
+                status: 'open'
+            });
+
+            us23ReviewApp = await Application.create({
+                job: reviewJob._id,
+                applicant: jobSeeker._id,
+                resumeFilename: 'resume1.pdf',
+                coverLetterFilename: 'cover_letter1.pdf',
+                status: 'Applied'
+            });
+        });
+
+        it('AT-23.1 & Task 23.1: returns candidate profile, attached CV, and cover letter for the posting recruiter', async () => {
+            const res = await request(app)
+                .get(`/api/applications/${us23ReviewApp._id}`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`);
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body._id).toEqual(us23ReviewApp._id.toString());
+            expect(res.body.resumeFilename).toEqual('resume1.pdf');
+            expect(res.body.coverLetterFilename).toEqual('cover_letter1.pdf');
+
+            expect(res.body).toHaveProperty('applicant');
+            expect(res.body.applicant.fullName).toEqual('App Seeker');
+            expect(res.body.applicant.email).toEqual(`seeker_app_${RUN_ID}@example.com`);
+            expect(res.body.applicant).not.toHaveProperty('password');
+
+            expect(res.body).toHaveProperty('job');
+            expect(res.body.job.title).toEqual('Senior Developer Review Job');
+        });
+
+        it('AT-23.2 & Task 23.4: rejects a different recruiter with status 403', async () => {
+            const res = await request(app)
+                .get(`/api/applications/${us23ReviewApp._id}`)
+                .set('Authorization', `Bearer ${us23OtherRecruiterToken}`);
+
+            expect(res.statusCode).toEqual(403);
+            expect(res.body.message).toEqual('Not authorized to view this application');
+        });
+
+        it('Task 23.4: rejects a job seeker with status 403 and unauthenticated requests with 401', async () => {
+            const seekerRes = await request(app)
+                .get(`/api/applications/${us23ReviewApp._id}`)
+                .set('Authorization', `Bearer ${seekerToken}`);
+            expect(seekerRes.statusCode).toEqual(403);
+            expect(seekerRes.body.message).toEqual('Recruiter access required');
+
+            const unauthRes = await request(app)
+                .get(`/api/applications/${us23ReviewApp._id}`);
+            expect(unauthRes.statusCode).toEqual(401);
+        });
+
+        it('Task 23.1: returns 404 for an invalid or non-existent application ID', async () => {
+            const invalidRes = await request(app)
+                .get('/api/applications/invalid-object-id')
+                .set('Authorization', `Bearer ${us23RecruiterToken}`);
+            expect(invalidRes.statusCode).toEqual(404);
+
+            const fakeId = new mongoose.Types.ObjectId();
+            const missingRes = await request(app)
+                .get(`/api/applications/${fakeId}`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`);
+            expect(missingRes.statusCode).toEqual(404);
+        });
+
+        it('AT-24.1, Task 24.2 & Task 24.4: moves Applied -> Under Review -> Interview -> Offered, records statusHistory, and creates notification', async () => {
+            const Notification = require('../models/Notification');
+            
+            const res1 = await request(app)
+                .patch(`/api/applications/${us23ReviewApp._id}/status`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`)
+                .send({ status: 'Under Review' });
+            expect(res1.statusCode).toEqual(200);
+            expect(res1.body.application.status).toEqual('Under Review');
+
+            const res2 = await request(app)
+                .patch(`/api/applications/${us23ReviewApp._id}/status`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`)
+                .send({ status: 'Interview' });
+            expect(res2.statusCode).toEqual(200);
+
+            const res3 = await request(app)
+                .patch(`/api/applications/${us23ReviewApp._id}/status`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`)
+                .send({ status: 'Offered' });
+            expect(res3.statusCode).toEqual(200);
+
+            const updated = await Application.findById(us23ReviewApp._id);
+            expect(updated.status).toEqual('Offered');
+            expect(updated.statusHistory).toHaveLength(3);
+            expect(updated.statusHistory[0]).toMatchObject({
+                fromStatus: 'Applied',
+                toStatus: 'Under Review',
+                changedBy:recruiter._id
+            });
+            expect(updated.statusHistory[0].changedAt).toBeDefined();
+            expect(updated.statusHistory[1]).toMatchObject({
+                fromStatus: 'Under Review',
+                toStatus: 'Interview'
+            });
+            expect(updated.statusHistory[2]).toMatchObject({
+                fromStatus: 'Interview',
+                toStatus: 'Offered'
+            });
+
+            const notif = await Notification.findOne({
+                recipient: jobSeeker._id,
+                application: us23ReviewApp._id,
+                type: 'application_status',
+                message: /Offered/i
+            });
+            expect(notif).not.toBeNull();
+        });
+
+        it('AT-24.2 & Task 24.5: blocks changes when Withdrawn or when stage transition is invalid', async () => {
+            // 1. Withdrawn cannot be changed
+            us23ReviewApp.status = 'Withdrawn';
+            await us23ReviewApp.save();
+
+            const withdrawnRes = await request(app)
+                .patch(`/api/applications/${us23ReviewApp._id}/status`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`)
+                .send({ status: 'Under Review' });
+            expect(withdrawnRes.statusCode).toEqual(400);
+
+            // 2. Backward transition (Under Review -> Applied) is blocked
+            const extraJob1 = await Job.create({
+                recruiter: recruiter._id,
+                company: 'Test Company',
+                title: 'Stage Transition Test Job 1',
+                location: APP_CITY,
+                description: 'Job for stage transition test 1.',
+                status: 'open'
+            });
+            const underReviewApp = await Application.create({
+                job: extraJob1._id,
+                applicant: jobSeeker._id,
+                status: 'Under Review'
+            });
+            const skipRes = await request(app)
+                .patch(`/api/applications/${underReviewApp._id}/status`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`)
+                .send({ status: 'Applied' });
+            expect(skipRes.statusCode).toEqual(400);
+
+            // 3. Offered -> Applied and Offered -> Interview are blocked
+            const extraJob2 = await Job.create({
+                recruiter: recruiter._id,
+                company: 'Test Company',
+                title: 'Stage Transition Test Job 2',
+                location: APP_CITY,
+                description: 'Job for stage transition test 2.',
+                status: 'open'
+            });
+            const offeredApp = await Application.create({
+                job: extraJob2._id,
+                applicant: jobSeeker._id,
+                status: 'Offered'
+            });
+            const backwardRes = await request(app)
+                .patch(`/api/applications/${offeredApp._id}/status`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`)
+                .send({ status: 'Applied' });
+            expect(backwardRes.statusCode).toEqual(400);
+
+            const offeredToInterviewPatch = await request(app)
+                .patch(`/api/applications/${offeredApp._id}/status`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`)
+                .send({ status: 'Interview' });
+            expect(offeredToInterviewPatch.statusCode).toEqual(400);
+
+            const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+            const offeredToInterviewInvite = await request(app)
+                .post(`/api/applications/${offeredApp._id}/interview`)
+                .set('Authorization', `Bearer ${us23RecruiterToken}`)
+                .send({
+                    scheduledAt: futureDate,
+                    locationOrLink: 'https://meet.google.com/blocked-test',
+                    message: 'Should be blocked'
+                });
+            expect(offeredToInterviewInvite.statusCode).toEqual(400);
+        });
+
+        it('Task 24.1: rejects status updates from a recruiter who does not own the job with 403', async () => {
+            const res = await request(app)
+                .patch(`/api/applications/${us23ReviewApp._id}/status`)
+                .set('Authorization', `Bearer ${us23OtherRecruiterToken}`)
+                .send({ status: 'Under Review' });
+
+            expect(res.statusCode).toEqual(403);
         });
     });
 });
