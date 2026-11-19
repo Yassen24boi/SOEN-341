@@ -235,6 +235,41 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
       });
     }
 
+    const ALLOWED_RECRUITER_TRANSITIONS = {
+      Applied: ['Under Review', 'Interview','Offered', 'Rejected'],
+      'Under Review': ['Interview', 'Offered', 'Rejected'],
+      Interview: ['Offered', 'Rejected'],
+      Offered: [],
+      Rejected: [],
+      Withdrawn: []
+    };
+
+    const TERMINAL_RECRUITER_STATUSES = ['Withdrawn', 'Offered', 'Rejected']
+
+    if (isRecruiter && !isApplicant) {
+      if (TERMINAL_RECRUITER_STATUSES.includes(previousStatus)) {
+        return res.status(400).json({
+          message: 'Cannot change the status of a withdrawn application.'
+        })
+      }
+    
+      const allowedNext = ALLOWED_RECRUITER_TRANSITIONS[previousStatus] || [];
+      if (previousStatus !== status && !allowedNext.includes(status)) {
+        return res.status(400).json({
+        message: `Cannot move application from ${previousStatus} to ${status}.`
+        });
+      }
+    }
+
+    if(previousStatus !== status){
+      application.statusHistory.push({
+        fromStatus: previousStatus,
+        toStatus: status,
+        changedBy: req.userId,
+        changedAt: new Date()
+      })
+    }
+
     // Save new status
     application.status = status;
     await application.save();
@@ -322,6 +357,13 @@ router.post('/:id/interview', requireAuth, async (req, res) => {
       return res.status(400).json({ message: 'This candidate withdrew their application.' });
     }
 
+    const canInviteToInterview = ['Applied', 'Under Review', 'Interview'].includes(application.status);
+    if(!canInviteToInterview) {
+      return res.status(400).json({
+        message: `Cannot invite an applicant in ${application.status} to an interview.`
+      })
+    }
+
     // Create the interview, or update it if one was already sent (rescheduling)
     const interview = await Interview.findOneAndUpdate(
       { application: application._id },
@@ -329,6 +371,18 @@ router.post('/:id/interview', requireAuth, async (req, res) => {
       { upsert: true, new: true, runValidators: true }
     );
 
+    if (application.status !== 'Interview') {
+      if(!Array.isArray(application.statusHistory)) {
+        application.statusHistory = [];
+      }
+
+      application.statusHistory.push({
+        fromStatus: application.status,
+        toStatus: 'Interview',
+        changedBy: req.userId,
+        changedAt: new Date()
+      })
+    }
     application.status = 'Interview';
     await application.save();
 

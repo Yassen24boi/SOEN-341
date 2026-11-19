@@ -15,6 +15,7 @@ import ApplicationDetails from '../ApplicationDetails';
 // Mock the window.alert and fetch API globally
 global.alert = jest.fn();
 global.fetch = jest.fn();
+global.confirm = jest.fn();
 
 // Mock console.error to keep test output clean from intentional errors
 console.error = jest.fn();
@@ -1098,6 +1099,385 @@ describe('CareerConnect Frontend UI Acceptance Tests', () => {
         expect(screen.queryByText(/Invite Jose JobSeeker to an interview/i)).not.toBeInTheDocument();
         expect(screen.getByRole('status')).toHaveTextContent(/Interview invitation sent to Jose JobSeeker\./i);
       });
+    });
+  });
+
+  describe('US-23 & US-24 - Candidate Application Review & Stage Controls (ApplicationDetails.jsx)', () => {
+    const jsonHeaders = { get: () => 'application/json' };
+
+    beforeEach(() => {
+      localStorage.setItem('token', 'mock_token');
+    });
+
+    it('AT-23.1 & Task 23.2: should display candidate profile (excluding resumes JSON), CV iframe preview, and cover letter', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: jsonHeaders,
+        json: async () => ({
+          _id: 'app1',
+          status: 'Applied',
+          createdAt: '2026-11-18T22:31:49.509Z',
+          resumeFilename: 'resume.pdf',
+          coverLetterFilename: 'cover_letter.pdf',
+          job: { _id: 'job1', title: 'Software Developer' },
+          applicant: {
+            fullName: 'Jose JobSeeker',
+            email: 'jose@gmail.com',
+            headline: 'Full-Stack Developer',
+            skills: ['React', 'Node.js'],
+            resumes: [
+              {
+                filename: 'resume.pdf',
+                label: 'Software CV',
+                isDefault: true,
+                _id: '6afe27559b53027e76cd377f',
+                uploadedAt: '2026-11-18T22:31:49.509Z'
+              }
+            ]
+          }
+        }),
+      });
+
+      render(
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: '/recruiter/applications/app1',
+              state: { filteredIds: ['app1', 'app2'], jobId: 'job1' },
+            },
+          ]}
+        >
+          <Routes>
+            <Route path="/recruiter/applications/:applicationId" element={<ApplicationDetails />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: 'Jose JobSeeker' })).toBeInTheDocument();
+        expect(screen.getByText('jose@gmail.com')).toBeInTheDocument();
+        expect(screen.getByText('Full-Stack Developer')).toBeInTheDocument();
+        expect(screen.getByText('React')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/Software CV/i)).not.toBeInTheDocument();
+
+      const cvIframe = screen.getByTitle('Candidate CV Preview');
+      expect(cvIframe).toHaveAttribute('src', 'http://localhost:5000/uploads/resume.pdf');
+      expect(screen.getByRole('link', { name: /Download CV \(resume\.pdf\)/i })).toBeInTheDocument();
+
+      const clIframe = screen.getByTitle('Candidate Cover Letter Preview');
+      expect(clIframe).toHaveAttribute('src', 'http://localhost:5000/uploads/cover_letter.pdf');
+      expect(screen.getByRole('link', { name: /Download Cover Letter \(cover_letter\.pdf\)/i })).toBeInTheDocument();
+    });
+
+    it('Task 23.3: should navigate between filtered applications using Next and Previous buttons', async () => {
+      fetch
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          headers: jsonHeaders,
+          json: async () => ({
+            _id: 'app1',
+            status: 'Applied',
+            createdAt: '2026-11-18T22:31:49.509Z',
+            resumeFilename: 'resume.pdf',
+            job: { _id: 'job1', title: 'Software Developer' },
+            applicant: { fullName: 'Jose JobSeeker', email: 'jose@gmail.com' },
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          headers: jsonHeaders,
+          json: async () => ({
+            _id: 'app2',
+            status: 'Under Review',
+            createdAt: '2026-11-19T14:00:00.000Z',
+            resumeFilename: 'alex_cv.pdf',
+            job: { _id: 'job1', title: 'Software Developer' },
+            applicant: { fullName: 'Alex Rivera', email: 'alex@example.com' },
+          }),
+        });
+
+      render(
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: '/recruiter/applications/app1',
+              state: { filteredIds: ['app1', 'app2'], jobId: 'job1' },
+            },
+          ]}
+        >
+          <Routes>
+            <Route path="/recruiter/applications/:applicationId" element={<ApplicationDetails />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: 'Jose JobSeeker' })).toBeInTheDocument();
+        expect(screen.getByText('1 of 2')).toBeInTheDocument();
+      });
+
+      expect(screen.getByRole('button', { name: /Previous/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Next/i })).toBeEnabled();
+
+      fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: 'Alex Rivera' })).toBeInTheDocument();
+        expect(screen.getByText('2 of 2')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Previous/i })).toBeEnabled();
+        expect(screen.getByRole('button', { name: /Next/i })).toBeDisabled();
+      });
+    });
+
+    it('AT-23.2 & Task 23.4: should display an error alert when the backend rejects access with 403', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        headers: jsonHeaders,
+        json: async () => ({ message: 'Not authorized to view this application' }),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/recruiter/applications/forbidden-app']}>
+          <Routes>
+            <Route path="/recruiter/applications/:applicationId" element={<ApplicationDetails />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent(/Not authorized to view this application/i);
+      });
+    });
+
+    it('should close the interview form when another status is selected or when an invitation is sent', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: jsonHeaders,
+        json: async () => ({
+          _id: 'app1',
+          status: 'Applied',
+          createdAt: '2026-11-18T22:31:49.509Z',
+          job: { _id: 'job1', title: 'Software Developer' },
+          applicant: { fullName: 'Jose JobSeeker', email: 'jose@gmail.com' },
+        }),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/recruiter/applications/app1']}>
+          <Routes>
+            <Route path="/recruiter/applications/:applicationId" element={<ApplicationDetails />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: 'Jose JobSeeker' })).toBeInTheDocument();
+      });
+
+      const statusSelect = screen.getByLabelText(/Status/i);
+
+      fireEvent.change(statusSelect, { target: { value: 'Interview' } });
+      expect(screen.getByText(/Invite Jose JobSeeker to an interview/i)).toBeInTheDocument();
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: jsonHeaders,
+        json: async () => ({ message: 'Updated' }),
+      });
+      fireEvent.change(statusSelect, { target: { value: 'Under Review' } });
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Invite Jose JobSeeker to an interview/i)).not.toBeInTheDocument();
+      });
+
+      fireEvent.change(statusSelect, { target: { value: 'Interview' } });
+      fireEvent.change(screen.getByLabelText(/^Date$/i), { target: { value: '2027-05-10' } });
+      fireEvent.change(screen.getByLabelText(/^Time$/i), { target: { value: '10:30' } });
+      fireEvent.change(screen.getByLabelText(/Location or meeting link/i), {
+        target: { value: 'https://meet.google.com/test-link' },
+      });
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        headers: jsonHeaders,
+        json: async () => ({ message: 'Interview invitation sent', interview: { _id: 'int1' } }),
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Send invitation/i }));
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Invite Jose JobSeeker to an interview/i)).not.toBeInTheDocument();
+        expect(screen.getByRole('status')).toHaveTextContent(/Interview invitation sent to Jose JobSeeker\./i);
+      });
+    });
+
+    it('AT-24.1 & confirm prompt: updates status to Under Review when confirmed and cancels when declined', async () => {
+      jest.spyOn(window, 'confirm').mockReturnValue(false);
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: jsonHeaders,
+        json: async () => ({
+          _id: 'app1',
+          status: 'Applied',
+          createdAt: '2026-11-18T22:31:49.509Z',
+          job: { _id: 'job1', title: 'Software Developer' },
+          applicant: { fullName: 'Jose JobSeeker', email: 'jose@gmail.com' },
+        }),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/recruiter/applications/app1']}>
+          <Routes>
+            <Route path="/recruiter/applications/:applicationId" element={<ApplicationDetails />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: 'Jose JobSeeker' })).toBeInTheDocument();
+      });
+
+      const callsAfterLoad = fetch.mock.calls.length
+      const statusSelect = screen.getByLabelText(/Status/i);
+
+      // Declining confirmation should not call PATCH
+      fireEvent.change(statusSelect, { target: { value: 'Under Review' } });
+      expect(window.confirm).toHaveBeenCalledTimes(1);
+      expect(fetch).toHaveBeenCalledTimes(callsAfterLoad);
+      expect(fetch).not.toHaveBeenCalledWith(
+        expect.stringContaining('/status'),
+        expect.anything()
+      );
+
+      // Confirming should send PATCH /api/applications/app1/status
+      window.confirm.mockReturnValue(true);
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: jsonHeaders,
+        json: async () => ({ message: 'Application status updated successfully' }),
+      });
+
+      fireEvent.change(statusSelect, { target: { value: 'Under Review' } });
+
+      await waitFor(() => {
+        expect(fetch).toHaveBeenCalledWith(
+          'http://localhost:5000/api/applications/app1/status',
+          expect.objectContaining({
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'Under Review' }),
+          })
+        );
+      });
+    });
+
+    it('blocks forbidden status transitions without showing window.confirm', async () => {
+      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: jsonHeaders,
+        json: async () => ({
+          _id: 'app-offered',
+          status: 'Offered',
+          createdAt: '2026-11-18T22:31:49.509Z',
+          job: { _id: 'job1', title: 'Software Developer' },
+          applicant: { fullName: 'Jose JobSeeker', email: 'jose@gmail.com' },
+        }),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/recruiter/applications/app-offered']}>
+          <Routes>
+            <Route path="/recruiter/applications/:applicationId" element={<ApplicationDetails />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: 'Jose JobSeeker' })).toBeInTheDocument();
+      });
+
+      const callsAfterLoad = fetch.mock.calls.length;
+      fireEvent.change(screen.getByLabelText(/Status/i), { target: { value: 'Interview' } });
+
+      expect(confirmSpy).not.toHaveBeenCalled();
+      expect(global.alert).toHaveBeenCalledWith('Cannot move application from Offered to Interview.');
+      expect(fetch).toHaveBeenCalledTimes(callsAfterLoad);
+      expect(fetch).not.toHaveBeenCalledWith(
+        expect.stringContaining('/status'),
+        expect.anything()
+      );
+    });
+
+    it('AT-24.2: disables the status dropdown when application status is Withdrawn', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: jsonHeaders,
+        json: async () => ({
+          _id: 'app-withdrawn',
+          status: 'Withdrawn',
+          createdAt: '2026-11-18T22:31:49.509Z',
+          job: { _id: 'job1', title: 'Software Developer' },
+          applicant: { fullName: 'Jose JobSeeker', email: 'jose@gmail.com' },
+        }),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/recruiter/applications/app-withdrawn']}>
+          <Routes>
+            <Route path="/recruiter/applications/:applicationId" element={<ApplicationDetails />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: 'Jose JobSeeker' })).toBeInTheDocument();
+      });
+
+      expect(screen.getByLabelText(/Status/i)).toBeDisabled();
+    });
+
+    it('AT-24.2: disables the status dropdown when application status is Withdrawn', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: jsonHeaders,
+        json: async () => ({
+          _id: 'app-withdrawn',
+          status: 'Withdrawn',
+          createdAt: '2026-11-18T22:31:49.509Z',
+          job: { _id: 'job1', title: 'Software Developer' },
+          applicant: { fullName: 'Jose JobSeeker', email: 'jose@gmail.com' },
+        }),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/recruiter/applications/app-withdrawn']}>
+          <Routes>
+            <Route path="/recruiter/applications/:applicationId" element={<ApplicationDetails />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: 'Jose JobSeeker' })).toBeInTheDocument();
+      });
+
+      expect(screen.getByLabelText(/Status/i)).toBeDisabled();
     });
   });
 });

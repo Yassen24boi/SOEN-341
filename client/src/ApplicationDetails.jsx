@@ -88,12 +88,45 @@ function ApplicationDetails(){
         // eslint-disable-next-line
     }, [applicationId])
 
+    const ALLOWED_RECRUITER_TRANSITIONS = {
+      Applied: ['Under Review', 'Interview', 'Rejected'],
+      'Under Review': ['Interview', 'Offered', 'Rejected'],
+      Interview: ['Offered', 'Rejected'],
+      Offered: [],
+      Rejected: [],
+      Withdrawn: []
+    };
+
     async function handleStatusChange(newStatus) {
         setNotice('')
 
+        const currentStatus = application.status || 'Applied'
+        if(newStatus === currentStatus) return
+
+        if (currentStatus === 'Withdrawn') {
+          alert('Cannot change the status of a withdrawn application.')
+          return
+        }
+
+        const allowedNext = ALLOWED_RECRUITER_TRANSITIONS[currentStatus] || []
+        if (!allowedNext.includes(newStatus)) {
+          alert(`Cannot move application from ${currentStatus} to ${newStatus}.`)
+          return
+        }
+
+        const confirmed = window.confirm(
+          `Change ${displayName}'s application status from "${currentStatus}" to "${newStatus}?"`
+        )
+        if (!confirmed) return
+
         if(newStatus === 'Interview'){
-            setShowInterviewForm(true)
+          if(application.status === 'Offered' || application.status === 'Rejected' || application.status === 'Withdrawn'){
+            alert(`Cannot move application from ${application.status} to Interview`)
             return
+          }  
+          
+          setShowInterviewForm(true)
+          return
         }
 
         setShowInterviewForm(false)
@@ -206,6 +239,7 @@ function ApplicationDetails(){
                     <select
                         id="detail-app-status"
                         value={application.status || 'Applied'}
+                        disabled={application.status === 'Withdrawn'}
                         onChange={(e) => handleStatusChange(e.target.value)}
                     >
                         <option value="Applied">Applied</option>
