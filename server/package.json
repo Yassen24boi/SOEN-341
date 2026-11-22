@@ -1,4 +1,3 @@
-
 {
   "name": "server",
   "version": "1.0.0",
@@ -9,7 +8,6 @@
     "dev": "nodemon server.js",
     "test": "jest --forceExit",
     "validate:ai": "node scripts/validateAI.js"
-
   },
   "jest": {
     "testEnvironment": "node",
@@ -28,22 +26,7 @@
       }
     }
   },
-  "jest": {
-    "collectCoverageFrom": [
-      "routes/**/*.js",
-      "middleware/**/*.js",
-      "models/**/*.js",
-      "!**/node_modules/**"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 70,
-        "functions": 70,
-        "lines": 70,
-        "statements": 70
-      }
-    }
-  },
+  
   "keywords": [],
   "author": "",
   "license": "ISC",
