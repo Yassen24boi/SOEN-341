@@ -1,0 +1,16 @@
+Camille Gagnon
+Québec, QC | camille.gagnon@courriel.com
+
+PROFIL
+Étudiante en génie logiciel à la recherche d'un stage en développement web.
+
+FORMATION
+Baccalauréat en génie logiciel, Université Laval (prévu 2027)
+
+COMPÉTENCES
+JavaScript, React, Node.js, MongoDB, Git
+
+EXPÉRIENCE
+Développeuse stagiaire - Cedar Apps (été 2026)
+- Développé 3 pages en React pour l'application mobile web
+- Corrigé 25 bogues signalés par les utilisateurs

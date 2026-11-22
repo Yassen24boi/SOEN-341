@@ -1,0 +1,17 @@
+Lea Tremblay
+Laval, QC | lea.tremblay@email.com | portfolio: leatremblay.dev
+
+EDUCATION
+B.Comp.Sc., Concordia University (expected 2026)
+
+SKILLS
+JavaScript, React, HTML, CSS, Figma, Git
+
+PROJECTS
+Weather App - React app showing a 5-day forecast from a public weather API
+Portfolio site - personal website built with React and CSS animations
+Recipe Finder - search recipes by ingredient, built with JavaScript
+
+EXPERIENCE
+Teaching Assistant, Intro to Web Development (2025-2026)
+- Helped 60 students debug HTML and CSS assignments

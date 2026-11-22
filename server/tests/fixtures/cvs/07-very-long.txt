@@ -1,0 +1,70 @@
+Jordan Lee
+Vancouver, BC | jordan.lee@email.com
+
+SUMMARY
+Full stack developer with experience across many small projects.
+
+SKILLS
+JavaScript, TypeScript, React, Node.js, PostgreSQL, Git, AWS
+
+PROJECTS
+Project 1 - inventory tracker version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 2 - chat app version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 3 - budget planner version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 4 - event booking site version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 5 - fitness log version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 6 - quiz game version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 7 - note taking app version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 8 - photo gallery version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 9 - URL shortener version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 10 - markdown editor version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 11 - todo list version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 12 - calendar app version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 13 - music playlist manager version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 14 - expense splitter version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 15 - habit tracker version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 16 - blog engine version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 17 - job board version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 18 - recipe manager version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 19 - movie ratings site version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 20 - weather dashboard version 1: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 21 - inventory tracker version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 22 - chat app version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 23 - budget planner version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 24 - event booking site version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 25 - fitness log version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 26 - quiz game version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 27 - note taking app version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 28 - photo gallery version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 29 - URL shortener version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 30 - markdown editor version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 31 - todo list version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 32 - calendar app version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 33 - music playlist manager version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 34 - expense splitter version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 35 - habit tracker version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 36 - blog engine version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 37 - job board version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 38 - recipe manager version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 39 - movie ratings site version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 40 - weather dashboard version 2: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 41 - inventory tracker version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 42 - chat app version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 43 - budget planner version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 44 - event booking site version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 45 - fitness log version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 46 - quiz game version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 47 - note taking app version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 48 - photo gallery version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 49 - URL shortener version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 50 - markdown editor version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 51 - todo list version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 52 - calendar app version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 53 - music playlist manager version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 54 - expense splitter version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 55 - habit tracker version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 56 - blog engine version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 57 - job board version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 58 - recipe manager version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 59 - movie ratings site version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
+Project 60 - weather dashboard version 3: built with React and Node.js, stored data in PostgreSQL, deployed on AWS, and wrote a short README explaining how to run it locally.
