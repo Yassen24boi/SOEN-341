@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom'
+import RecommendedJobs from './Components/RecommendedJobs'
 
 const API = 'http://localhost:5000/api/applications';
 const EMPTY_STATS = {
@@ -244,6 +245,9 @@ function Applications() {
             </div>
           </section>
         </section>
+        
+        {/* US-37: AI job matches on the job seeker dashboard */}
+        <RecommendedJobs />
 
         <div className="filter-row">
           <label htmlFor="history-search">Search:</label>

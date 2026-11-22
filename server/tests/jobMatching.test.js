@@ -1,4 +1,4 @@
-const { buildProfileSummary, recommendJobs, AIMatchError } = require('../services/jobMatching');
+const { buildProfileSummary, preselectJobs, recommendJobs, AIMatchError } = require('../services/jobMatching');
 
 // Task 34.4: unit tests for job matching. `fakeAI` stands in for Ollama, so these tests never need the real AI.
 function fakeAI(matches) {
@@ -48,7 +48,7 @@ describe('Job matching - ranking (Tasks 34.2, 34.3)', () => {
 
         const recommendations = await recommendJobs('Skills: Java, Spring', JOBS, ask);
 
-        expect(recommendations.map((r) => r.job.title)).toEqual(['Java Developer', 'Spring Backend Intern', 'UX Designer']);
+        expect(recommendations.map((r) => r.job.title)).toEqual(['Java Developer', 'Spring Backend Intern']);
         expect(recommendations[0]).toEqual({ job: JOBS[1], matchScore: 95, reason: 'Java role matching the candidate\'s Java skills' });
     });
 
@@ -88,11 +88,22 @@ describe('Job matching - ranking (Tasks 34.2, 34.3)', () => {
     });
 
     it('should keep scores between 0 and 100', async () => {
-        const ask = fakeAI([{ jobNumber: 1, score: 140, reason: 'Fits' }, { jobNumber: 2, score: -5, reason: 'Does not fit' }]);
+        const ask = fakeAI([{ jobNumber: 1, score: 140, reason: 'Fits' }, { jobNumber: 2, score: 60, reason: 'Fits a bit' }]);
 
         const recommendations = await recommendJobs('Skills: Java', JOBS, ask);
 
-        expect(recommendations.map((r) => r.matchScore)).toEqual([100, 0]);
+        expect(recommendations.map((r) => r.matchScore)).toEqual([100, 60]);
+    });
+
+    it('should hide weak matches below 40%, and return none when nothing fits well (US-37)', async () => {
+        const someFit = fakeAI([{ jobNumber: 2, score: 90, reason: 'Java role' }, { jobNumber: 4, score: 5, reason: 'Finance role' }]);
+        const noneFit = fakeAI([{ jobNumber: 1, score: 10, reason: 'Design role' }, { jobNumber: 4, score: 0, reason: 'Finance role' }]);
+
+        const some = await recommendJobs('Skills: Java', JOBS, someFit);
+        const none = await recommendJobs('Skills: Java', JOBS, noneFit);
+
+        expect(some.map((r) => r.job.title)).toEqual(['Java Developer']);
+        expect(none).toEqual([]);
     });
 
     it('should return no recommendations without asking the AI when there are no open jobs', async () => {
@@ -112,5 +123,38 @@ describe('Job matching - ranking (Tasks 34.2, 34.3)', () => {
         const ask = fakeAI([{ jobNumber: 42, score: 90, reason: 'Not a real job' }]);
 
         await expect(recommendJobs('Skills: Java', JOBS, ask)).rejects.toThrow(AIMatchError);
+    });
+});
+
+describe('Job matching - choosing which jobs the AI sees (US-37)', () => {
+    it('should put jobs that share words with the profile first', () => {
+        const jobs = [
+            { title: 'Pastry Chef', description: 'Bake bread and cakes.' },
+            { title: 'Accountant', description: 'Prepare financial statements.' },
+            { title: 'Backend Developer', requirements: 'Java and Spring Boot' },
+            { title: 'Java Intern', description: 'Help our Java team.' }
+        ];
+
+        const picked = preselectJobs('Skills: Java, Spring', jobs, 2);
+
+        expect(picked.map((job) => job.title)).toEqual(['Backend Developer', 'Java Intern']);
+    });
+
+    it('should keep the original order (newest first) for jobs with the same number of shared words', () => {
+        const jobs = [{ title: 'Java Job A' }, { title: 'Java Job B' }, { title: 'Java Job C' }];
+
+        expect(preselectJobs('Skills: Java', jobs, 2).map((job) => job.title)).toEqual(['Java Job A', 'Java Job B']);
+    });
+
+    it('should leave out jobs that share no words with the profile (US-38)', () => {
+        const jobs = [{ title: 'Pastry Chef' }, { title: 'Accountant' }];
+
+        expect(preselectJobs('Skills: Rust', jobs, 2)).toEqual([]);
+    });
+
+    it('should treat words like c++ and node.js as whole words', () => {
+        const jobs = [{ title: 'C Developer' }, { title: 'C++ Developer' }, { title: 'Node.js Engineer' }];
+
+        expect(preselectJobs('Skills: c++, node.js', jobs, 2).map((job) => job.title)).toEqual(['C++ Developer', 'Node.js Engineer']);
     });
 });

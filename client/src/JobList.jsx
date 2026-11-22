@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import RecommendedJobs from './Components/RecommendedJobs'
 
 const API = 'http://localhost:5000/api/jobs'
 
@@ -111,6 +112,9 @@ function JobList() {
     <div className="page">
       <span className="eyebrow">Browse openings</span>
       <h1>Find a job</h1>
+      
+      {/* US-37: AI job matches for logged-in job seekers */}
+      <RecommendedJobs />
 
       {/* Search bar (US-09) and filter panel (US-10) */}
       <div className="card toolbar">
