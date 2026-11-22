@@ -7,7 +7,7 @@ const Notification = require('../models/Notification')
 const Profile = require('../models/Profile')
 const { extractResumeText } = require('../services/resumeText')
 const { buildProfileSummary, preselectJobs, recommendJobs } = require('../services/jobMatching')
-const { getCachedRecommendations, saveRecommendations } = require('../services/recommendationCache')
+const { buildCacheKey, getCachedRecommendations, saveRecommendations } = require('../services/recommendationCache')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const router = express.Router()
@@ -159,11 +159,7 @@ router.get('/recommended', requireAuth, async (req, res) => {
 
     // Task 37.3: reuse the last recommendations unless the profile, the default CV or the job list changed.
     // Applying to a job removes it from the list, so that changes the key too (AT-37.2).
-    const cacheKey = JSON.stringify([
-      profile?.updatedAt || null,
-      cv ? `${cv._id}:${cv.filename}` : null,
-      jobs.map((job) => `${job._id}:${new Date(job.updatedAt).getTime()}`)
-    ])
+    const cacheKey = buildCacheKey(profile, cv, jobs)
     const cached = getCachedRecommendations(req.userId, cacheKey)
     if (cached) {
       return res.json({ recommendations: cached, cached: true })

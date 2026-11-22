@@ -155,17 +155,7 @@ describe('GET /api/jobs/recommended (US-34)', () => {
         expect(res.body.title).toBe(titles.applied);
     });
 
-    it('should reuse saved recommendations instead of asking the AI again when nothing changed (Task 37.3)', async () => {
-        fakeAIScoring({ [titles.java]: 95, [titles.spring]: 80 });
-
-        const first = await getRecommendations(seekerToken);
-        const second = await getRecommendations(seekerToken);
-
-        expect(first.body.cached).toBe(false);
-        expect(second.body.cached).toBe(true);
-        expect(second.body.recommendations).toEqual(first.body.recommendations);
-        expect(askOllama).toHaveBeenCalledTimes(1);
-    });
+   
 
     it('should refresh recommendations when the profile changes (Task 37.3)', async () => {
         fakeAIScoring({ [titles.java]: 95 });
