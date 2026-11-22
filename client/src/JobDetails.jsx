@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
+import JobFeedbackButton from './Components/JobFeedbackButton.jsx'
 
 const API = 'http://localhost:5000/api/jobs'
 const PROFILEAPI = 'http://localhost:5000/api/profile'
@@ -159,6 +160,9 @@ function JobDetails() {
                     <p className="prose">{job.requirements}</p>
                 </>
             )}
+            
+            {/* US-36: compare the job seeker's CV with this job */}
+            <JobFeedbackButton jobId={job._id} />
 
             <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <button
