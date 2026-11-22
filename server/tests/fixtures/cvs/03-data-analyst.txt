@@ -1,0 +1,16 @@
+Priya Nair
+Toronto, ON | priya.nair@email.com
+
+EDUCATION
+B.Sc. Statistics, University of Toronto (2025)
+
+SKILLS
+Python, pandas, SQL, Excel, Tableau
+
+EXPERIENCE
+Data Analyst Intern - Summit Bank (2025)
+- Built a Tableau dashboard tracking loan approvals across 12 branches
+- Automated a weekly Excel report with Python, saving 4 hours per week
+
+PROJECTS
+Housing prices analysis - cleaned and analysed 50,000 listings with pandas

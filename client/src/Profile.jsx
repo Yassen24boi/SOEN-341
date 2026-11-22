@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import ResumeFeedback from "./Components/ResumeFeedback"
+import FeedbackHistory from "./Components/FeedbackHistory"
+
 
 function Profile() {
   const [profile, setProfile] = useState(null)
@@ -354,6 +356,9 @@ async function handleDownloadResume(filename, label) {
               </div>
             ))}
           </div>
+          
+          {/* US-36: earlier AI feedback on these CVs */}
+          <FeedbackHistory />
 
           {previewUrl && (
             <div style={{ 

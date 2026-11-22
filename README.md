@@ -47,10 +47,23 @@ By centralizing these features, CareerConnect aims to reduce missed opportunitie
 
 ## Tech Stack
 
+## AI Features
+
+CareerConnect has two AI features, both running on a free local model with [Ollama](https://ollama.com), so CVs never leave the server:
+
+- **[Resume feedback](Documentation/AI/resume-feedback.md):** strengths, weaknesses and suggestions for a CV, or feedback tailored to a specific job posting, with a saved history.
+- **[Job matching](Documentation/AI/job-matching.md):** the 5 open jobs that best fit a job seeker's profile and CV, each with a score and a reason.
+
+Both are checked so they never name skills that aren't in the CV. See the **[validation report](Documentation/AI/validation-report.md)** for the results on 10 test CVs, including edge cases.
+
+**To use the AI features locally:** install Ollama, run `ollama pull qwen2.5:7b` once, and keep Ollama running while the server runs. To re-run the validation: `cd server` then `npm run validate:ai`.
+
+------------------------
+
 - **Frontend:** React.js
 - **Backend:** Node.js
 - **Database:** MongoDB
-- **AI Integration:** 
+- **AI Integration:** Ollama running the free local model `qwen2.5:7b` (resume feedback and job matching)
 - **CI/CD & DevOps:** GitHub Actions, Docker
 - **Testing:** Jest
 

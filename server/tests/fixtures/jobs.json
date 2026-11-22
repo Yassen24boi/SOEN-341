@@ -1,0 +1,82 @@
+[
+  {
+    "_id": "job-java",
+    "title": "Java Backend Developer",
+    "company": "Harbour Systems",
+    "category": "Software",
+    "type": "full-time",
+    "location": "Montreal",
+    "requirements": "Java, Spring Boot, SQL, Git",
+    "description": "Build and test REST APIs for our banking platform."
+  },
+  {
+    "_id": "job-react",
+    "title": "Frontend React Developer",
+    "company": "Cedar Apps",
+    "category": "Software",
+    "type": "full-time",
+    "location": "Vancouver",
+    "requirements": "React, JavaScript, CSS, Figma",
+    "description": "Build responsive pages for our web app."
+  },
+  {
+    "_id": "job-data",
+    "title": "Junior Data Analyst",
+    "company": "Summit Bank",
+    "category": "Data",
+    "type": "full-time",
+    "location": "Toronto",
+    "requirements": "SQL, Python, Excel, Tableau",
+    "description": "Turn banking data into dashboards and weekly reports."
+  },
+  {
+    "_id": "job-devops",
+    "title": "DevOps Engineer",
+    "company": "Cloudnine",
+    "category": "Software",
+    "type": "full-time",
+    "location": "Vancouver",
+    "requirements": "Docker, Kubernetes, AWS, Linux",
+    "description": "Run and automate our cloud infrastructure."
+  },
+  {
+    "_id": "job-fullstack",
+    "title": "Junior Full Stack Developer",
+    "company": "Maple Tech",
+    "category": "Software",
+    "type": "internship",
+    "location": "Montreal",
+    "requirements": "React, Node.js, SQL, REST APIs",
+    "description": "Build features across our web app and backend."
+  },
+  {
+    "_id": "job-cook",
+    "title": "Line Cook",
+    "company": "Trattoria Roma",
+    "category": "Other",
+    "type": "full-time",
+    "location": "Montreal",
+    "requirements": "Food safety certification, 2 years of kitchen experience",
+    "description": "Prepare dishes during busy dinner service."
+  },
+  {
+    "_id": "job-retail",
+    "title": "Retail Store Associate",
+    "company": "Riverside Retail",
+    "category": "Other",
+    "type": "part-time",
+    "location": "Montreal",
+    "requirements": "Customer service, cash handling",
+    "description": "Help customers and keep the store organised."
+  },
+  {
+    "_id": "job-marketing",
+    "title": "Marketing Coordinator",
+    "company": "Coastline Apparel",
+    "category": "Marketing",
+    "type": "full-time",
+    "location": "Vancouver",
+    "requirements": "Social media, copywriting, Canva",
+    "description": "Plan and run our social media campaigns."
+  }
+]

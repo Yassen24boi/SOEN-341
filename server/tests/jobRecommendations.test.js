@@ -7,6 +7,7 @@ jest.mock('../services/ollamaClient');
 jest.mock('../services/resumeText');
 const { askOllama } = require('../services/ollamaClient');
 const { extractResumeText } = require('../services/resumeText');
+const { clearRecommendationCache } = require('../services/recommendationCache');
 
 const app = require('../server');
 const User = require('../models/User');
@@ -77,6 +78,7 @@ describe('GET /api/jobs/recommended (US-34)', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         extractResumeText.mockResolvedValue('');
+        clearRecommendationCache();
     });
 
     afterAll(async () => {
@@ -101,8 +103,8 @@ describe('GET /api/jobs/recommended (US-34)', () => {
 
         expect(res.statusCode).toEqual(200);
         const ours = res.body.recommendations.filter((r) => r.job.title.endsWith(String(RUN_ID)));
-        expect(ours.map((r) => r.job.title)).toEqual([titles.java, titles.spring, titles.design]);
-        expect(ours[0].matchScore).toBe(95);
+        expect(ours.map((r) => r.job.title)).toEqual([titles.java, titles.spring]);
+        expect(ours.map((r) => r.job.title)).not.toContain(titles.design);        expect(ours[0].matchScore).toBe(95);
         expect(ours[0].reason).toContain('Matches your skills');
         expect(ours[0].job).not.toHaveProperty('description');
     });
@@ -151,5 +153,59 @@ describe('GET /api/jobs/recommended (US-34)', () => {
 
         expect(res.statusCode).toEqual(200);
         expect(res.body.title).toBe(titles.applied);
+    });
+
+   
+
+    it('should refresh recommendations when the profile changes (Task 37.3)', async () => {
+        fakeAIScoring({ [titles.java]: 95 });
+        await getRecommendations(seekerToken);
+
+        await Profile.updateOne({ user_id: seeker._id }, { skills: ['Java', 'Spring', 'SQL'] });
+        const res = await getRecommendations(seekerToken);
+
+        expect(res.body.cached).toBe(false);
+        expect(askOllama).toHaveBeenCalledTimes(2);
+    });
+
+    it('should drop a job from the recommendations after the user applies to it (AT-37.2)', async () => {
+        fakeAIScoring({ [titles.java]: 95, [titles.spring]: 80 });
+        const before = await getRecommendations(seekerToken);
+        expect(before.body.recommendations.map((r) => r.job.title)).toContain(titles.spring);
+
+        const springJob = await Job.findOne({ title: titles.spring });
+        await Application.create({ job: springJob._id, applicant: seeker._id });
+        const after = await getRecommendations(seekerToken);
+
+        expect(after.body.cached).toBe(false);
+        expect(after.body.recommendations.map((r) => r.job.title)).not.toContain(titles.spring);
+        await Application.deleteOne({ job: springJob._id, applicant: seeker._id });
+    });
+
+    it('should never recommend closed or archived jobs (Task 37.4)', async () => {
+        const [closedJob, archivedJob] = await Job.insertMany([
+            { recruiter: recruiter._id, title: `Closed Java Job ${RUN_ID}`, company: 'Test Co', description: 'A test job.', status: 'closed' },
+            { recruiter: recruiter._id, title: `Archived Java Job ${RUN_ID}`, company: 'Test Co', description: 'A test job.', status: 'archived' }
+        ]);
+        fakeAIScoring({ [closedJob.title]: 99, [archivedJob.title]: 99, [titles.java]: 90 });
+
+        const res = await getRecommendations(seekerToken);
+
+        const recommendedTitles = res.body.recommendations.map((r) => r.job.title);
+        expect(recommendedTitles).toContain(titles.java);
+        expect(recommendedTitles).not.toContain(closedJob.title);
+        expect(recommendedTitles).not.toContain(archivedJob.title);
+    });
+    
+    it('should still find relevant jobs when many newer unrelated jobs exist (US-37)', async () => {
+        // 45 newer jobs with nothing in common with a Java/Spring profile
+        await Job.insertMany(Array.from({ length: 45 }, (_, i) => ({
+            recruiter: recruiter._id, title: `Bakery Shift ${i} ${RUN_ID}`, company: 'Test Co', description: 'Bake bread.'
+        })));
+        fakeAIScoring({ [titles.java]: 95 });
+
+        const res = await getRecommendations(seekerToken);
+
+        expect(res.body.recommendations.map((r) => r.job.title)).toContain(titles.java);
     });
 });

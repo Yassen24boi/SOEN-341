@@ -1,27 +1,39 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import FeedbackResult from './FeedbackResult'
 
 const API = 'http://localhost:5000/api/resumes'
+const JOBS_API = 'http://localhost:5000/api/jobs'
 const UNAVAILABLE = 'Feedback is unavailable, try again later'
 
-// One titled list in the feedback panel, e.g. "Strengths"
-function FeedbackList({ title, items }) {
-  return (
-    <div style={{ marginTop: '12px' }}>
-      <h5 style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#333' }}>{title}</h5>
-      <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: '#444', textAlign: 'left' }}>
-        {items.map((item, i) => (
-          <li key={i} style={{ marginBottom: '4px' }}>{item}</li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-// US-33 (Task 33.5): "Get AI feedback" button and feedback panel for one CV
+// US-33 / US-36: "Get AI feedback" button and feedback panel for one CV,
+// with an optional job picker to tailor the feedback to that job (Task 36.2)
 function ResumeFeedback({ resumeId }) {
   const [feedback, setFeedback] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [jobSearch, setJobSearch] = useState('')
+  const [jobOptions, setJobOptions] = useState([])
+  const [jobId, setJobId] = useState('')
+
+  // Search open jobs 300 ms after the user stops typing
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      const q = jobSearch.trim()
+      if (!q) {
+        setJobOptions([])
+        return
+      }
+      try {
+        const res = await fetch(`${JOBS_API}?q=${encodeURIComponent(q)}`)
+        const data = await res.json()
+        setJobOptions(res.ok ? data.jobs : [])
+      } catch (err) {
+        console.error(err)
+        setJobOptions([])
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [jobSearch])
 
   async function getFeedback() {
     setLoading(true)
@@ -30,7 +42,8 @@ function ResumeFeedback({ resumeId }) {
     try {
       const res = await fetch(`${API}/${resumeId}/feedback`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify(jobId ? { jobId } : {})
       })
       const data = await res.json()
       if (!res.ok) {
@@ -38,6 +51,8 @@ function ResumeFeedback({ resumeId }) {
         return
       }
       setFeedback(data)
+      // Lets the feedback history on the profile page show the new result
+      window.dispatchEvent(new Event('feedback-history-updated'))
     } catch (err) {
       console.error(err)
       setError(UNAVAILABLE)
@@ -47,39 +62,41 @@ function ResumeFeedback({ resumeId }) {
   }
 
   return (
-    <div style={{ marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '15px', textAlign: 'left' }}>
-      <button
-        type="button"
-        onClick={getFeedback}
-        disabled={loading}
-        style={{ width: 'auto', padding: '8px 16px', cursor: loading ? 'wait' : 'pointer', backgroundColor: '#6f42c1', color: 'white', border: 'none', borderRadius: '4px', fontWeight: '500' }}
-      >
-        {loading ? 'Getting feedback...' : feedback ? 'Get new AI feedback' : 'Get AI feedback'}
-      </button>
+    <div style={{ marginTop: 15, borderTop: '1px solid #eee', paddingTop: 15, textAlign: 'left', display: 'grid', gap: 10 }}>
+      <div className="field">
+        <label htmlFor={`job-search-${resumeId}`}>Tailor the feedback to a job (optional)</label>
+        <input
+          id={`job-search-${resumeId}`}
+          type="text"
+          placeholder="Search jobs, e.g. React developer"
+          value={jobSearch}
+          onChange={(e) => setJobSearch(e.target.value)}
+        />
+        {jobOptions.length > 0 && (
+          <select aria-label="Job to tailor the feedback to" value={jobId} onChange={(e) => setJobId(e.target.value)}>
+            <option value="">General feedback (no job)</option>
+            {jobOptions.map((job) => (
+              <option key={job._id} value={job._id}>{job.title} · {job.company}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      <div>
+        <button type="button" className="btn primary" onClick={getFeedback} disabled={loading}>
+          {loading ? 'Getting feedback...' : jobId ? 'Get AI feedback for this job' : feedback ? 'Get new AI feedback' : 'Get AI feedback'}
+        </button>
+      </div>
 
       {loading && (
-        <p role="status" style={{ margin: '10px 0 0 0', fontSize: '13px', color: '#666' }}>
+        <p role="status" className="muted" style={{ margin: 0, fontSize: 13 }}>
           The AI is reading your CV. This can take up to 30 seconds.
         </p>
       )}
 
-      {error && (
-        <p role="alert" style={{ margin: '10px 0 0 0', fontSize: '14px', color: '#dc3545' }}>{error}</p>
-      )}
+      {error && <p role="alert" className="notice" style={{ margin: 0 }}>{error}</p>}
 
-      {feedback && (
-        <div aria-label="AI feedback" style={{ marginTop: '12px', padding: '15px', backgroundColor: '#f8f5ff', border: '1px solid #d6c8f5', borderRadius: '8px' }}>
-          <span style={{ padding: '3px 10px', backgroundColor: '#6f42c1', color: 'white', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
-            AI-generated
-          </span>
-          <span style={{ marginLeft: '8px', fontSize: '12px', color: '#666' }}>
-            Review these suggestions before changing your CV.
-          </span>
-          <FeedbackList title="Strengths" items={feedback.strengths} />
-          <FeedbackList title="Weaknesses" items={feedback.weaknesses} />
-          <FeedbackList title="Suggestions" items={feedback.suggestions} />
-        </div>
-      )}
+      {feedback && <FeedbackResult feedback={feedback} />}
     </div>
   )
 }

@@ -6,7 +6,8 @@ const Application = require('../models/Application')
 const Notification = require('../models/Notification')
 const Profile = require('../models/Profile')
 const { extractResumeText } = require('../services/resumeText')
-const { buildProfileSummary, recommendJobs } = require('../services/jobMatching')
+const { buildProfileSummary, preselectJobs, recommendJobs } = require('../services/jobMatching')
+const { buildCacheKey, getCachedRecommendations, saveRecommendations } = require('../services/recommendationCache')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const router = express.Router()
@@ -134,9 +135,11 @@ router.get('/filters', async (req, res) => {
 })
 
 
-// US-34: GET /api/jobs/recommended - the 5 open jobs that best match the logged-in user's profile and CV.
+// US-34 / US-37: GET /api/jobs/recommended - the 5 open jobs that best match the logged-in user's profile and CV.
 // This must stay above GET /:id, otherwise "recommended" would be treated as a job id.
+// The AI ranks at most 40 jobs (keeps it fast), picked by relevance from at most 500 open jobs
 const MAX_JOBS_TO_RANK = 40
+const MAX_JOBS_TO_CONSIDER = 500
 router.get('/recommended', requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.userId)
@@ -144,9 +147,24 @@ router.get('/recommended', requireAuth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' })
     }
     const profile = await Profile.findOne({ user_id: req.userId }).lean()
-
     // The default CV (or the first one) gives the AI more information about the user
     const cv = user.resumes.find((r) => r.isDefault) || user.resumes[0]
+
+    // Task 37.4: only open, non-expired jobs (so never closed or archived) that the user hasn't applied to yet.
+    const appliedJobIds = await Application.distinct('job', { applicant: req.userId })
+    const jobs = await Job.find({ ...visibleJobsFilter(), _id: { $nin: appliedJobIds } })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(MAX_JOBS_TO_CONSIDER)
+      .lean()
+
+    // Task 37.3: reuse the last recommendations unless the profile, the default CV or the job list changed.
+    // Applying to a job removes it from the list, so that changes the key too (AT-37.2).
+    const cacheKey = buildCacheKey(profile, cv, jobs)
+    const cached = getCachedRecommendations(req.userId, cacheKey)
+    if (cached) {
+      return res.json({ recommendations: cached, cached: true })
+    }
+
     let cvText = ''
     if (cv) {
       try {
@@ -165,35 +183,27 @@ router.get('/recommended', requireAuth, async (req, res) => {
       })
     }
 
-    // Open jobs the user hasn't applied to yet, newest first. Ranking at most 40 keeps the AI fast.
-    const appliedJobIds = await Application.distinct('job', { applicant: req.userId })
-    const jobs = await Job.find({ ...visibleJobsFilter(), _id: { $nin: appliedJobIds } })
-      .sort({ createdAt: -1, _id: -1 })
-      .limit(MAX_JOBS_TO_RANK)
-      .lean()
-
-    const recommendations = await recommendJobs(profileSummary, jobs)
+    const ranked = await recommendJobs(profileSummary, preselectJobs(profileSummary, jobs, MAX_JOBS_TO_RANK))
     // Send back only what a job card needs
-    res.json({
-      recommendations: recommendations.map(({ job, matchScore, reason }) => ({
-        job: {
-          _id: job._id,
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          category: job.category,
-          type: job.type
-        },
-        matchScore,
-        reason
-      }))
-    })
+    const recommendations = ranked.map(({ job, matchScore, reason }) => ({
+      job: {
+        _id: job._id,
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        category: job.category,
+        type: job.type
+      },
+      matchScore,
+      reason
+    }))
+    saveRecommendations(req.userId, cacheKey, recommendations)
+    res.json({ recommendations, cached: false })
   } catch (err) {
     console.error('Job recommendations failed:', err.message)
     res.status(503).json({ message: 'Recommendations are unavailable, try again later' })
   }
 })
-
 // Reads the optional salary fields from a request body (salaryMin, salaryMax, salaryPeriod).
 // An empty value means "no salary", so it clears the field.
 function readSalary(body) {

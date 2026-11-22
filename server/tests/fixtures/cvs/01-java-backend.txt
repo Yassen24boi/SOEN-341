@@ -1,0 +1,22 @@
+Samir Haddad
+Montreal, QC | samir.haddad@email.com | github.com/samirh
+
+SUMMARY
+Software engineering student focused on backend development.
+
+EDUCATION
+B.Eng. Software Engineering, Concordia University (expected 2027)
+
+SKILLS
+Java, Spring Boot, MySQL, Git, Docker, JUnit
+
+EXPERIENCE
+Backend Developer Intern - Lumen Labs (Summer 2026)
+- Built 6 REST APIs in Spring Boot used by 2,000 daily users
+- Cut slow database queries from 2s to 300ms by adding MySQL indexes
+- Wrote JUnit tests that raised coverage from 40% to 75%
+
+PROJECTS
+CareerConnect - job search platform (team of 5)
+- Designed the job search API and pagination
+Library System - Java desktop app for managing book loans
