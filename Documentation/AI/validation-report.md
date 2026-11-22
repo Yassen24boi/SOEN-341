@@ -20,6 +20,9 @@ Each CV in `server/tests/fixtures/cvs/` was run through general feedback, feedba
 | 10-empty.txt | No text: correctly rejected | No text: correctly rejected | No text: correctly rejected | 0 | 0 |
 
 ## Manual review
+
+Every output below was read by a team member to check that it is relevant to the CV and does not mention skills or employers that are not in the CV or the job.
+
 - Reviewed by: Noor Rabie
 - Findings: All 10 outputs reviewed. No skills or employers that aren't in the CVs. Scanned PDF and empty CV correctly rejected. Some suggestions are generic, and the French CV gets feedback in English (see limitations in the feature docs).
 
