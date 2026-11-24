@@ -204,141 +204,36 @@ With 15 user stories, the team will prepare at least 15 acceptance tests or corr
 
 ## 8. Continuous Integration & Unit Testing
 
-**Responsible:** Yassen Hegazy  
-**Static Analysis:** Michel Yosufov  
+**CI/CD Coordinator:** Yassen Hegazy  
+**Static Analysis Coordinator:** Michel Yosufov  
 **Test Contributors:** All Team Members
 
-**Target Completion:** November 30, 2026 (proposed)
+The CI/CD pipeline and automated test integration were implemented during Sprint 3. Sprint 4 will build upon the existing infrastructure rather than recreate it.
 
-**Planned Tasks**
+Each team member is individually responsible for implementing, maintaining, and executing automated tests for their assigned user stories.
 
-- Maintain the existing GitHub Actions CI pipeline.
-- Review automated tests from previous sprints.
-- Implement automated unit tests for Sprint 4 features.
-- Address gaps in existing application test coverage.
-- Integrate static analysis into the CI workflow.
-- Verify tests run automatically when pull requests are created.
-- Resolve pipeline configuration errors.
-- Document successful CI execution.
-- Document static analysis results and associated fixes.
-- Ensure all developers contribute unit tests for their features.
+### Individual Testing Responsibilities
 
-## 9. Scrum Master Responsibilities
+- Implement unit tests for every assigned feature.
+- Implement relevant integration and acceptance tests.
+- Cover expected behaviour, edge cases, and failure scenarios.
+- Ensure newly implemented tests run automatically through the existing CI/CD pipeline.
+- Resolve failing tests associated with assigned functionality.
+- Include tests within the corresponding feature pull request.
+- Ensure all required CI checks pass before merging.
 
-**Responsible:** Yassen Hegazy
+### CI/CD Coordinator Responsibilities
 
-**Sprint Planning**
+- Maintain the existing CI/CD infrastructure.
+- Verify that newly implemented tests execute automatically.
+- Monitor pipeline execution and resolve infrastructure-related issues.
+- Identify gaps in application test coverage.
+- Coordinate final CI/CD verification.
 
-- Facilitate Sprint 4 planning.
-- Coordinate task assignments.
-- Establish priorities and deadlines.
-- Ensure user stories are broken into development tasks.
-- Ensure individual workloads remain balanced.
+### Static Analysis Responsibilities
 
-**Sprint Monitoring**
+- Integrate static analysis into the existing CI/CD pipeline.
+- Document identified bugs, vulnerabilities, and code smells.
+- Ensure developers resolve issues associated with their respective code.
 
-- Maintain the GitHub Project Board.
-- Track task progress.
-- Identify blockers.
-- Coordinate communication between team members.
-- Ensure GitHub Issues remain updated.
-- Monitor CI pipeline execution.
-- Coordinate pull request reviews.
-
-**Sprint Delivery**
-
-- Monitor completion of required deliverables.
-- Coordinate sprint documentation.
-- Verify completion of software quality requirements.
-- Ensure contribution logs and AI usage logs are maintained.
-- Organize the final application demonstration.
-- Prepare the Sprint 4 Summary Report.
-
-## 10. Sprint Schedule
-
-The following dates are proposed and should be adjusted to the confirmed evaluation deadline.
-
-| **Date** | **Planned Activities** | **Responsible Members** |
-|---|---|---|
-| Nov 24 | Finalize sprint plan and distribute responsibilities | Yassen / All Members |
-| Nov 25 | Create development tasks, organize GitHub Issues and define acceptance tests | Noor / All Members |
-| Nov 26 | Continue AI development, remaining application features and repository organization | All Developers |
-| Nov 27 | Integrate AI features, implement privacy protection and configure static analysis | Noor / Jose David / Michel |
-| Nov 28 | Complete remaining application functionality and begin integration testing | Julia / Noor |
-| Nov 29 | Complete AI functionality, validation, static analysis and coding standards | Noor / Jose David / Michel |
-| Nov 30 | Execute acceptance tests, unit tests, regression tests and CI verification | All Members |
-| Dec 1 | Final code reviews, integration testing and bug fixes | All Members |
-| Before Evaluation | Prepare final demonstration, summary report and individual documentation | All Members |
-
-## 11. Shared Team Responsibilities
-
-All team members are responsible for:
-
-- Updating assigned GitHub Issues.
-- Maintaining individual contribution logs.
-- Recording time spent on activities.
-- Providing links to commits, pull requests, and issues.
-- Maintaining individual AI usage logs.
-- Participating in sprint meetings.
-- Reviewing pull requests when assigned.
-- Following established coding standards.
-- Implementing unit tests for assigned functionality.
-- Testing previously implemented features.
-- Resolving identified bugs and static analysis issues.
-- Communicating blockers and delays.
-
-## 12. Definition of Done
-
-A task is considered complete when:
-
-- Required functionality has been implemented.
-- Relevant acceptance tests have passed.
-- Unit tests have passed.
-- Code complies with established coding standards.
-- Code has been reviewed and approved by at least one other team member.
-- Identified static analysis issues have been addressed where applicable.
-- Changes have been merged into the appropriate branch.
-- Required CI checks pass.
-- GitHub Issue status has been updated.
-- Contribution logs and AI usage logs have been updated where applicable.
-- Relevant technical documentation has been completed.
-
-## 13. Expected Sprint 4 Deliverables
-
-- Completed AI-Powered Resume Feedback Feature.
-- Completed AI Job Matching Feature.
-- AI Feature Validation and Technical Documentation.
-- Completed Remaining Mandatory Application Functionality.
-- Acceptance Tests for Sprint 4 User Stories.
-- Automated Unit Tests for Application Code.
-- Functional Continuous Integration Pipeline.
-- Reorganized Repository Structure.
-- Static Analysis Integration and Maintenance Documentation.
-- Documented Coding Standards.
-- Sprint 4 Pull Request Review Records.
-- Updated GitHub Project Board and Sprint Backlog.
-- Individual Contribution Logs.
-- Updated AI Usage Logs.
-- Individual Sprint 4 PDF Reports.
-- Sprint 4 Summary Report.
-- Updated Meeting Minutes.
-- Final Demonstration of the CareerConnect Platform.
-
-## 14. Sprint Completion Criteria
-
-Sprint 4 will be considered ready for evaluation when:
-
-- All mandatory core features have been implemented.
-- At least two Generative AI features have been completed, integrated, and validated.
-- AI privacy considerations, limitations, and failure handling have been documented.
-- Acceptance tests have been created and linked to user stories.
-- Unit tests have been implemented and run automatically through CI.
-- Static analysis has been integrated into the CI pipeline.
-- Identified software quality issues have been documented and addressed.
-- All Sprint 4 pull requests have been reviewed.
-- The repository follows a consistent and maintainable structure.
-- Previous sprint functionality has been reviewed and integrated.
-- All required documentation has been updated.
-- Individual contributions have been recorded.
-- The team has prepared the final demonstration.
-- The GitHub repository reflects the final project state.
+Testing is a shared development responsibility and is not assigned exclusively to the CI/CD coordinator.
